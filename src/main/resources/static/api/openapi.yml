@@ -1,0 +1,7 @@
+openapi: 3.2.0
+info:
+  title: Federation of Agricultural Collectivities - API
+  version: 1.0.0
+  description: >
+    API for managing the Federation of Agricultural Collectivities in Madagascar.
+    This file contains reusable components (schemas, parameters, responses).
