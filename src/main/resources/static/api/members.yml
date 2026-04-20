@@ -70,3 +70,22 @@ paths:
               schema:
                 type: string
               example: Member or collectivity not found
+  /members/{id}:
+    delete:
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/MemberIdPathVariable"
+      responses:
+        204:
+          description: Member removed successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Member removed successfully
+        404:
+          description: Member not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Member not found
