@@ -84,6 +84,50 @@ paths:
               schema:
                 type: string
               example: Unprocessable Entity
+  /collectivities/{id}/reject:
+    post:
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+              example:
+                 reason: Insufficient number of members with 6 months seniority
+      responses:
+        200:
+          description: Collectivity rejected
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        400:
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Bad request
+        404:
+          description: Collectivity not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Collectivity not found
+        422:
+          description: Collectivity cannot be rejected (already authorized or invalid state)
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:  Collectivity cannot be rejected (already authorized or invalid state)
 
 
   
