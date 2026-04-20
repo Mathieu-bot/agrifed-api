@@ -1,0 +1,36 @@
+openapi: 3.1.0
+info:
+  title: Federation of Agricultural Collectivities - API
+  description:
+    API for managing the Federation of Agricultural Collectivities in Madagascar.
+    This file contains the endpoints for opening and creating new agricultural collectivities (Part A).
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /collectivities:
+    post:
+      tags:
+        - Collectivity
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yml#/components/schemas/Collectivity"
+      responses:
+        201:
+          description: New collectivity created
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        400:
+          description: All conditions are not met
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Bad request
+  
