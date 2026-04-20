@@ -12,8 +12,6 @@ paths:
     post:
       tags:
         - Collectivity
-      security:
-        - basicAuth: [ ]
       requestBody:
         content:
           application/json:
@@ -43,4 +41,17 @@ paths:
                 type: array
                 items:
                   $ref: "./openapi.yml#/#/components/schemas/Collectivity"
+  /collectivities/{id}:
+    post:
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+      responses:
+        200:
+          description: Specific collectivity with all its informations
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+
+
   
