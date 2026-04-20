@@ -67,10 +67,16 @@ paths:
       security:
         - basicAuth: [ ]
       requestBody:
+        required: false
         content:
           application/json:
             schema:
-              $ref: "./openapi.yml#/components/schemas/Collectivity"
+              type: object
+              properties:
+                comment:
+                  type: string
+              example:
+                comment: All conditions verified - Approved
       responses:
         200:
           description: Collectivity created successfully
@@ -86,7 +92,7 @@ paths:
                 type: string
               example: Collectivity not found
         422:
-          description: Unprocessable Entity
+          description: Collectivity cannot be authorized (conditions not met or already processed)
           content:
             text/plain:
               schema:
