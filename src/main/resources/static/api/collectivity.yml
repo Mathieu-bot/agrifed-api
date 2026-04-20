@@ -53,6 +53,13 @@ paths:
             application/json:
               schema:
                 $ref: "./openapi.yml#/components/schemas/Collectivity"
+        404:
+          description: Collectivity not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Collectivity not found
   /collectivities/{id}/authorize:
     post:
       parameters:
