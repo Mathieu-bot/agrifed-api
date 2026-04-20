@@ -13,13 +13,14 @@ paths:
       tags:
         - Collectivity
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               $ref: "./openapi.yml#/components/schemas/Collectivity"
       responses:
         201:
-          description: New collectivity created
+          description: New collectivity created successfully(pending approval)
           content:
             application/json:
               schema:
