@@ -43,7 +43,7 @@ paths:
                 items:
                   $ref: "./openapi.yml#/#/components/schemas/Collectivity"
   /collectivities/{id}:
-    post:
+    get:
       parameters:
         - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       responses:
