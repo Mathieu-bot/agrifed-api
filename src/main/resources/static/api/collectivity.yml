@@ -33,6 +33,8 @@ paths:
                 type: string
               example: Bad request
     get:
+      tags:
+        - Collectivity
       responses:
         200:
           description: List of collectivities
@@ -44,6 +46,8 @@ paths:
                   $ref: "./openapi.yml#/#/components/schemas/Collectivity"
   /collectivities/{id}:
     get:
+      tags:
+        - Collectivity
       parameters:
         - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       responses:
@@ -62,6 +66,8 @@ paths:
               example: Collectivity not found
   /collectivities/{id}/authorize:
     post:
+      tags:
+        - Collectivity
       parameters:
         - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       security:
@@ -100,6 +106,8 @@ paths:
               example: Unprocessable Entity
   /collectivities/{id}/reject:
     post:
+      tags:
+        - Collectivity
       parameters:
         - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       security:
