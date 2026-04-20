@@ -105,6 +105,7 @@ paths:
       security:
         - basicAuth: [ ]
       requestBody:
+        required: false
         content:
           application/json:
             schema:
