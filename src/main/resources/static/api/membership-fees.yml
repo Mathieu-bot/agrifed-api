@@ -12,7 +12,9 @@ paths:
   /collectivities/{id}/membership-fee:
     post:
       tags:
-        - Member
+        - Contribution
+      parameters:
+        $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       requestBody:
         required: true
         content:
