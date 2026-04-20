@@ -29,9 +29,25 @@ paths:
               schema:
                 $ref: "./openapi.yml#/components/schemas/MembershipFee"
         400:
-          description: All conditions are not met
+          description: Invalid data or conditions not met
           content:
             text/plain:
               schema:
                 type: string
               example: Bad request
+  /federation/membership-fee/percentage:
+    get:
+      responses:
+        200:
+          description: Percentage of dues paid to the federation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  percentage:
+                    type: number
+                    format: double
+                    example: 15.5
+                required:
+                  - percentage
