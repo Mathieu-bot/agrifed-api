@@ -13,8 +13,6 @@ paths:
     post:
       tags:
         - Contribution
-      parameters:
-        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       requestBody:
         required: true
         content:

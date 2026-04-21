@@ -294,7 +294,7 @@ components:
         - creationDate
         - federationId
 
-CollectivityUpdate:
+    CollectivityUpdate:
       type: object
       properties:
         name:
@@ -306,6 +306,13 @@ CollectivityUpdate:
 
     Contribution:
       type: object
+      required:
+        - amount
+        - collectionDate
+        - paymentMethod
+        - type
+        - memberId
+        - collectivityId
       properties:
         id:
           type: integer
