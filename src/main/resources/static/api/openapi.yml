@@ -1,1589 +1,178 @@
-openapi: 3.2.0
+openapi: 3.1.0
 info:
-  title: Federation of Agricultural Collectivities - API
-  version: 1.0.0
-  description: API for managing the Federation of Agricultural Collectivities in Madagascar.
+  title: Agricultural federation API
+  description: |
+    # Versioning
+    This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are : 
+    - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
+  version: 0.0.1
 servers:
-  - url: 'http://localhost:8080'
-
+  - url: 'https://localhost:8080'
+paths:
+  '/collectivities':
+    post:
+      summary: Create list of collectivities
+      description: |
+        During collectivity request body creation, only members ID are provided to identify members. 
+        But the response content includes members information, not only their IDs.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateCollectivity'
+      responses:
+        201:
+          description: List of created collectivities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collectivity'
+        400:
+          description: Collectivity without federation approval or structure missing.
+        404:
+          description: Member not found.
+  '/members':
+    post:
+      summary: Create list of members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreateMember'
+      responses:
+        201:
+          description: List of created members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Member'
+        400:
+          description: |
+            The following case must return a bad request exception : 
+            - Member with bad referees or without proper payment.
+            - Membership dues not paid or registration fee not paid.
+        404:
+          description: Either collectivity or member not found.
 components:
-
-  parameters:
-    pageParam:
-      name: page
-      in: query
-      schema:
-        type: integer
-    limitParam:
-      name: limit
-      in: query
-      schema:
-        type: integer
-        default: 20
-    statusParam:
-      name: status
-      in: query
-      schema:
-        type: string
-        enum:
-          - pending
-          - approved
-          - rejected
-    cityParam:
-      name: city
-      in: query
-      schema:
-        type: string
-    beginParam:
-      name: beginning
-      in: query
-      schema:
-        type: string
-        format: date
-    endParam:
-      name: end
-      in: query
-      schema:
-        type: string
-        format: date
-    collectivityIdParam:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    collectivityNumberParam:
-      name: number
-      in: path
-      required: true
-      schema:
-        type: string
-    collectivityNameParam:
-      name: name
-      in: path
-      required: true
-      schema:
-        type: string
-    memberIdParam:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    membershipApplicationIdParam:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    activityIdParam:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    accountIdParam:
-      name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-
   schemas:
-
-    Exception:
+    CreateCollectivity:
       type: object
-      required:
-        - type
-        - message
       properties:
-        type:
+        location:
           type: string
-        message:
-          type: string
-
-    BadRequestException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-    UnauthorizedException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-    NotAuthorizedException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-    ResourceNotFoundException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-    ConflictException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-    BusinessRuleViolationException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-        - type: object
-          properties:
-            rule:
-              type: string
-    InternalServerException:
-      allOf:
-        - $ref: '#/components/schemas/Exception'
-
-    Pagination:
-      type: object
-      properties:
-        page:
-          type: integer
-          default: 1
-        limit:
-          type: integer
-          default: 20
-        total:
-          type: integer
-        totalPages:
-          type: integer
-
-    PaginatedResponse:
-      type: object
-      properties:
-        data:
+        members:
           type: array
           items:
-            type: object
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-
-    Federation:
+            schema:
+              $ref: '#/components/schemas/MemberIdentifier'
+        federationApproval:
+          type: boolean
+        structure:
+          $ref: '#/components/schemas/CreateCollectivityStructure'
+    CreateCollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/MemberIdentifier'
+        vicePresident:
+          $ref: '#/components/schemas/MemberIdentifier'
+        treasurer:
+          $ref: '#/components/schemas/MemberIdentifier'
+        secretary:
+          $ref: '#/components/schemas/MemberIdentifier'
+    CollectivityStructure:
+      type: object
+      properties:
+        president:
+          $ref: '#/components/schemas/Member'
+        vicePresident:
+          $ref: '#/components/schemas/Member'
+        treasurer:
+          $ref: '#/components/schemas/Member'
+        secretary:
+          $ref: '#/components/schemas/Member'
+    Collectivity:
       type: object
       properties:
         id:
-          type: integer
-        name:
           type: string
-
-    Position:
+        location:
+          type: string
+        structure:
+          $ref: '#/components/schemas/CollectivityStructure'
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/Member'
+    MemberIdentifier:
+      type: string
+    CreateMember:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
+      properties:
+        collectivityIdentifier:
+          type: string
+        referees:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberIdentifier'
+        registrationFeePaid:
+          type: boolean
+        membershipDuesPaid:
+          type: boolean
+    MemberInformation:
       type: object
       properties:
-        id:
-          type: integer
-        label:
+        firstName:
           type: string
-          enum:
-            - president
-            - vice_president
-            - treasurer
-            - secretary
-            - confirmed_member
-            - junior_member
-        context:
-          type: string
-          enum:
-            - both
-            - collectivity
-            - federation
-
-    Member:
-      type: object
-      required:
-        - lastname
-        - firstname
-        - birthDate
-        - gender
-        - address
-        - membershipDate
-      properties:
-        id:
-          type: integer
-        lastname:
-          type: string
-        firstname:
+        lastName:
           type: string
         birthDate:
           type: string
           format: date
         gender:
-          type: string
-          enum:
-            - male
-            - female
+          $ref: '#/components/schemas/Gender'
         address:
           type: string
-        occupation:
-          type: string
-        phone:
-          type: string
-        email:
-          type: string
-        membershipDate:
-          type: string
-          format: date
-
-    Sponsor:
-      type: object
-      required:
-        - memberId
-        - collectivityId
-        - relationshipType
-      properties:
-        memberId:
-          type: integer
-        collectivityId:
-          type: integer
-        relationshipType:
-          type: string
-          enum:
-            - family
-            - friend
-            - colleague
-            - neighbor
-            - other
-
-    MembershipApplication:
-      type: object
-      required:
-        - candidate
-        - sponsors
-        - targetCollectivityId
-        - admissionFee
-        - annualContribution
-      properties:
-        id:
-          type: integer
-        candidate:
-          $ref: '#/components/schemas/Member'
-        sponsors:
-          type: array
-          items:
-            $ref: '#/components/schemas/Sponsor'
-          minItems: 2
-        targetCollectivityId:
-          type: integer
-        targetCollectivityNumber:
-          type: string
-        admissionFee:
-          type: number
-          format: double
-        annualContribution:
-          type: number
-          format: double
-        status:
-          type: string
-          enum:
-            - pending
-            - approved
-            - rejected
-          default: pending
-        applicationDate:
-          type: string
-          format: date
-        rejectionReason:
-          type: string
-
-    Collectivity:
-      type: object
-      required:
-        - number
-        - name
-        - specialty
-        - city
-        - creationDate
-        - federationId
-        - status
-      properties:
-        number:
-          type: string
-        name:
-          type: string
-        specialty:
-          type: string
-        city:
-          type: string
-        creationDate:
-          type: string
-          format: date
-        federationId:
-          type: integer
-        status:
-          type: string
-          enum:
-            - pending
-            - approved
-            - rejected
-          default: pending
-        authorizedBy:
-          type: integer
-        authorizationDate:
-          type: string
-          format: date
-        rejectionReason:
-          type: string
-
-    CollectivityCreate:
-      allOf:
-        - $ref: '#/components/schemas/Collectivity'
-
-    Activity:
-      type: object
-      required:
-        - collectivityId
-        - type
-        - activityDate
-        - isMandatory
-      properties:
-        id:
-          type: integer
-        collectivityId:
-          type: integer
-        federationId:
-          type: integer
-        type:
-          type: string
-          enum:
-            - general_meeting
-            - junior_training
-            - exceptional
-        activityDate:
-          type: string
-          format: date
-        isMandatory:
-          type: boolean
-        title:
-          type: string
-        description:
-          type: string
-
-    Attendance:
-      type: object
-      required:
-        - memberId
-        - activityId
-        - status
-      properties:
-        id:
-          type: integer
-        memberId:
-          type: integer
-        activityId:
-          type: integer
-        status:
-          type: string
-          enum:
-            - present
-            - excused
-            - absent
-        isExternal:
-          type: boolean
-          default: false
-
-    Account:
-      type: object
-      required:
-        - collectivityId
-        - type
-        - label
-      properties:
-        id:
-          type: integer
-        collectivityId:
-          type: integer
-        federationId:
-          type: integer
-        type:
-          type: string
-          enum:
-            - cash
-            - bank
-            - mobile_money
-        label:
-          type: string
-        bankName:
-          type: string
-        accountNumber:
-          type: string
-        rib:
-          type: string
-        mobileOperator:
+        profession:
           type: string
         phoneNumber:
+          type: int
+        email:
           type: string
-        balance:
-          type: number
-          format: double
-
-    Transaction:
+        occupation:
+          $ref: '#/components/schemas/MemberOccupation'
+    Member:
       type: object
-      required:
-        - accountId
-        - amount
-        - type
-        - transactionDate
+      allOf:
+        - $ref: '#/components/schemas/MemberInformation'
       properties:
         id:
-          type: integer
-        accountId:
-          type: integer
-        amount:
-          type: number
-          format: double
-        type:
-          type: string
-          enum:
-            - credit
-            - debit
-        transactionDate:
-          type: string
-          format: date
-        description:
-          type: string
-
-    Contribution:
-      type: object
-      required:
-        - amount
-        - collectionDate
-        - paymentMethod
-        - type
-        - memberId
-        - collectivityId
-      properties:
-        id:
-          type: integer
-        amount:
-          type: number
-          format: double
-        collectionDate:
-          type: string
-          format: date
-        paymentMethod:
-          type: string
-          enum:
-            - cash
-            - bank_transfer
-            - mobile_money
-        type:
-          type: string
-          enum:
-            - admission
-            - monthly
-            - annual
-            - one_time
-        federationPercentage:
-          type: number
-          format: double
-        memberId:
-          type: integer
-        collectivityId:
-          type: integer
-
-    Term:
-      type: object
-      required:
-        - startDate
-        - endDate
-        - context
-      properties:
-        id:
-          type: integer
-        context:
-          type: string
-          enum:
-            - collectivity
-            - federation
-        collectivityId:
-          type: integer
-        federationId:
-          type: integer
-        startDate:
-          type: string
-          format: date
-        endDate:
-          type: string
-          format: date
-
-    Vote:
-      type: object
-      required:
-        - type
-        - termId
-      properties:
-        id:
-          type: integer
-        type:
-          type: string
-          enum:
-            - collectivity
-            - federation
-        termId:
-          type: integer
-        memberId:
-          type: integer
-        positionId:
-          type: integer
-
-    CollectivityStatistics:
-      type: object
-      properties:
-        collectivityId:
-          type: integer
-        collectivityNumber:
-          type: string
-        collectivityName:
-          type: string
-        attendanceRate:
-          type: number
-          format: double
-        upToDateContributionRate:
-          type: number
-          format: double
-        newMembersCount:
-          type: integer
-
-    FederationStatistics:
-      type: object
-      properties:
-        period:
-          type: object
-          properties:
-            beginning:
-              type: string
-              format: date
-            end:
-              type: string
-              format: date
-        collectivities:
+          $ref: '#/components/schemas/MemberIdentifier'
+        referees:
           type: array
           items:
-            $ref: '#/components/schemas/CollectivityStatistics'
-        globalAttendanceRate:
-          type: number
-          format: double
-        globalUpToDateContributionRate:
-          type: number
-          format: double
-        totalNewMembers:
-          type: integer
-
-  responses:
-    '400':
-      description: Bad request
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/BadRequestException'
-    '401':
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/UnauthorizedException'
-    '403':
-      description: Forbidden
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/NotAuthorizedException'
-    '404':
-      description: Not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ResourceNotFoundException'
-    '409':
-      description: Conflict
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ConflictException'
-    '422':
-      description: Business rule violation
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/BusinessRuleViolationException'
-    '500':
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/InternalServerException'
-
-paths:
-
-  /collectivities:
-    post:
-      tags:
-        - Collectivity
-      summary: Create a new agricultural collectivity
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CollectivityCreate'
-        required: true
-      responses:
-        '201':
-          description: Collectivity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Collectivity
-      summary: List all collectivities
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/statusParam'
-        - $ref: '#/components/parameters/cityParam'
-      responses:
-        '200':
-          description: List of collectivities
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /collectivities/{id}:
-    get:
-      tags:
-        - Collectivity
-      summary: Get collectivity by ID
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /collectivities/by-number/{number}:
-    get:
-      tags:
-        - Collectivity
-      summary: Get collectivity by unique number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /collectivities/by-name/{name}:
-    get:
-      tags:
-        - Collectivity
-      summary: Get collectivity by unique name
-      parameters:
-        - $ref: '#/components/parameters/collectivityNameParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /collectivities/{id}/authorize:
-    post:
-      tags:
-        - Collectivity
-      summary: Authorize a collectivity
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      security:
-        - basicAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                comment:
-                  type: string
-        required: false
-      responses:
-        '200':
-          description: Collectivity authorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-        '404':
-          $ref: '#/components/responses/404'
-        '422':
-          $ref: '#/components/responses/422'
-
-  /collectivities/{id}/reject:
-    post:
-      tags:
-        - Collectivity
-      summary: Reject a collectivity
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      security:
-        - basicAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-        required: false
-      responses:
-        '200':
-          description: Collectivity rejected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-        '404':
-          $ref: '#/components/responses/404'
-        '422':
-          $ref: '#/components/responses/422'
-
-  /collectivities/{id}/statistics/monthly:
-    get:
-      tags:
-        - Collectivity
-      summary: Get collectivity monthly report
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-        - name: date
-          in: query
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: Monthly report
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  attendanceRate:
-                    type: number
-                    format: double
-                  memberCount:
-                    type: integer
-
-  /collectivities/{id}/statistics/attendance-rate:
-    get:
-      tags:
-        - Collectivity
-      summary: Get global attendance rate
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Attendance rate
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rate:
-                    type: number
-                    format: double
-
-  /collectivities/{id}/statistics/member-count:
-    get:
-      tags:
-        - Collectivity
-      summary: Get member count
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Member count
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
-
-  /members:
-    post:
-      tags:
-        - Member
-      summary: Register a new member
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Member'
-        required: true
-      responses:
-        '201':
-          description: Member created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Member'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Member
-      summary: List all members
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-      responses:
-        '200':
-          description: List of members
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /members/{id}:
-    get:
-      tags:
-        - Member
-      summary: Get member by ID
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-      responses:
-        '200':
-          description: Member details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Member'
-        '404':
-          $ref: '#/components/responses/404'
-    delete:
-      tags:
-        - Member
-      summary: Remove a member
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-      responses:
-        '204':
-          description: Member removed
-        '404':
-          $ref: '#/components/responses/404'
-
-  /members/{id}/collectivity:
-    put:
-      tags:
-        - Member
-      summary: Transfer member to another collectivity
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                newCollectivityId:
-                  type: integer
-              required:
-                - newCollectivityId
-        required: true
-      responses:
-        '200':
-          description: Member transferred
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Member'
-        '400':
-          $ref: '#/components/responses/400'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /members/{id}/attendance:
-    get:
-      tags:
-        - Member
-      summary: Get member attendance rate for period
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Attendance rate
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rate:
-                    type: number
-                    format: double
-
-  /members/{id}/encaissement:
-    get:
-      tags:
-        - Member
-      summary: Get member encaissement for period
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Total paid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  total:
-                    type: number
-                    format: double
-
-  /members/{id}/unpaid:
-    get:
-      tags:
-        - Member
-      summary: Get member unpaid amount for period
-      parameters:
-        - $ref: '#/components/parameters/memberIdParam'
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Unpaid amount
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  unpaid:
-                    type: number
-                    format: double
-
-  /membership-applications:
-    post:
-      tags:
-        - MembershipApplication
-      summary: Submit a membership application
-      description: Requires at least 2 sponsors, admission fee + annual contribution
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MembershipApplication'
-        required: true
-      responses:
-        '201':
-          description: Application submitted
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MembershipApplication'
-        '400':
-          $ref: '#/components/responses/400'
-        '422':
-          $ref: '#/components/responses/422'
-    get:
-      tags:
-        - MembershipApplication
-      summary: List membership applications
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum:
-              - pending
-              - approved
-              - rejected
-        - name: collectivityId
-          in: query
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: List of applications
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /membership-applications/{id}:
-    get:
-      tags:
-        - MembershipApplication
-      summary: Get membership application
-      parameters:
-        - $ref: '#/components/parameters/membershipApplicationIdParam'
-      responses:
-        '200':
-          description: Application details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MembershipApplication'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /membership-applications/{id}/approve:
-    post:
-      tags:
-        - MembershipApplication
-      summary: Approve membership application
-      parameters:
-        - $ref: '#/components/parameters/membershipApplicationIdParam'
-      security:
-        - basicAuth: []
-      responses:
-        '200':
-          description: Application approved
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MembershipApplication'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-        '404':
-          $ref: '#/components/responses/404'
-        '422':
-          $ref: '#/components/responses/422'
-
-  /membership-applications/{id}/reject:
-    post:
-      tags:
-        - MembershipApplication
-      summary: Reject membership application
-      parameters:
-        - $ref: '#/components/parameters/membershipApplicationIdParam'
-      security:
-        - basicAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-        required: false
-      responses:
-        '200':
-          description: Application rejected
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MembershipApplication'
-        '400':
-          $ref: '#/components/responses/400'
-        '401':
-          $ref: '#/components/responses/401'
-        '403':
-          $ref: '#/components/responses/403'
-        '404':
-          $ref: '#/components/responses/404'
-        '422':
-          $ref: '#/components/responses/422'
-
-  /contributions:
-    post:
-      tags:
-        - Contribution
-      summary: Register a contribution
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Contribution'
-        required: true
-      responses:
-        '201':
-          description: Contribution registered
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Contribution'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Contribution
-      summary: List contributions
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-      responses:
-        '200':
-          description: List of contributions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation/contributions/percentage:
-    get:
-      tags:
-        - Contribution
-      summary: Get federation contribution percentage
-      responses:
-        '200':
-          description: Percentage
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  percentage:
-                    type: number
-                    format: double
-
-  /accounts:
-    post:
-      tags:
-        - Account
-      summary: Create an account
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Account'
-        required: true
-      responses:
-        '201':
-          description: Account created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Account'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Account
-      summary: List accounts
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-      responses:
-        '200':
-          description: List of accounts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /accounts/{id}:
-    get:
-      tags:
-        - Account
-      summary: Get account by ID
-      parameters:
-        - $ref: '#/components/parameters/accountIdParam'
-      responses:
-        '200':
-          description: Account details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Account'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /accounts/{id}/balance:
-    get:
-      tags:
-        - Account
-      summary: Get current balance
-      parameters:
-        - $ref: '#/components/parameters/accountIdParam'
-      responses:
-        '200':
-          description: Current balance
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  balance:
-                    type: number
-                    format: double
-
-  /accounts/{id}/transactions:
-    get:
-      tags:
-        - Account
-      summary: List account transactions
-      parameters:
-        - $ref: '#/components/parameters/accountIdParam'
-      responses:
-        '200':
-          description: List of transactions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /activities:
-    post:
-      tags:
-        - Activity
-      summary: Create an activity
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Activity'
-        required: true
-      responses:
-        '201':
-          description: Activity created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Activity'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Activity
-      summary: List activities
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - name: type
-          in: query
-          schema:
-            type: string
-            enum:
-              - general_meeting
-              - junior_training
-              - exceptional
-        - name: is_upcoming
-          in: query
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: List of activities
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /activities/{id}:
-    get:
-      tags:
-        - Activity
-      summary: Get activity by ID
-      parameters:
-        - $ref: '#/components/parameters/activityIdParam'
-      responses:
-        '200':
-          description: Activity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Activity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /attendances:
-    post:
-      tags:
-        - Attendance
-      summary: Create an attendance record
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Attendance'
-        required: true
-      responses:
-        '201':
-          description: Attendance recorded
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Attendance'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Attendance
-      summary: List attendances
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-      responses:
-        '200':
-          description: List of attendances
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /attendances/{id}:
-    get:
-      tags:
-        - Attendance
-      summary: Get attendance by ID
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Attendance details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Attendance'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /attendances/{id}/excuse:
-    put:
-      tags:
-        - Attendance
-      summary: Mark attendance as excused
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Attendance excused
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Attendance'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /terms:
-    post:
-      tags:
-        - Term
-      summary: Create a term
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Term'
-        required: true
-      responses:
-        '201':
-          description: Term created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Term'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Term
-      summary: List terms
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - name: context
-          in: query
-          schema:
-            type: string
-            enum:
-              - collectivity
-              - federation
-      responses:
-        '200':
-          description: List of terms
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /positions:
-    post:
-      tags:
-        - Position
-      summary: Create a position
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Position'
-        required: true
-      responses:
-        '201':
-          description: Position created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Position'
-        '400':
-          $ref: '#/components/responses/400'
-    get:
-      tags:
-        - Position
-      summary: List positions
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - name: context
-          in: query
-          schema:
-            type: string
-            enum:
-              - both
-              - collectivity
-              - federation
-      responses:
-        '200':
-          description: List of positions
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation:
-    get:
-      tags:
-        - Federation
-      summary: Get federation info
-      responses:
-        '200':
-          description: Federation details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Federation'
-
-  /federation/collectivities:
-    get:
-      tags:
-        - Federation
-      summary: List federation collectivities
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - $ref: '#/components/parameters/statusParam'
-        - $ref: '#/components/parameters/cityParam'
-      responses:
-        '200':
-          description: List of collectivities
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation/accounts:
-    get:
-      tags:
-        - Federation
-      summary: List federation accounts
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-      responses:
-        '200':
-          description: List of accounts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation/activities:
-    get:
-      tags:
-        - Federation
-      summary: List federation activities
-      parameters:
-        - $ref: '#/components/parameters/pageParam'
-        - $ref: '#/components/parameters/limitParam'
-        - name: type
-          in: query
-          schema:
-            type: string
-            enum:
-              - general_meeting
-              - junior_training
-              - exceptional
-        - name: is_upcoming
-          in: query
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: List of activities
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation/statistics:
-    get:
-      tags:
-        - FederationStatistics
-      summary: Get federation statistics
-      description: Returns global statistics for a given period
-      parameters:
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Federation statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FederationStatistics'
-
-  /federation/statistics/collectivities/{id}:
-    get:
-      tags:
-        - FederationStatistics
-      summary: Get collectivity statistics
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Collectivity statistics
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CollectivityStatistics'
-        '404':
-          $ref: '#/components/responses/404'
+            $ref: '#/components/schemas/Member'
+    Gender:
+      type: string
+      enum:
+        - MALE
+        - FEMALE
+    MemberOccupation:
+      type: string
+      enum:
+        - JUNIOR
+        - SENIOR
+        - SECRETARY
+        - TREASURER
+        - VICE_PRESIDENT
+        - PRESIDENT
