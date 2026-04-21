@@ -6,10 +6,13 @@ info:
     API for managing the Federation of Agricultural Collectivities in Madagascar.
     This file contains reusable components (schemas, parameters, responses).
 
+servers:
+    - url: 'http://localhost:8080'
+
 components:
 
   parameters:
-    # Pagination
+  
     pageParam:
       name: page
       in: query
@@ -23,7 +26,6 @@ components:
         type: integer
         default: 20
 
-    # Collectivity filters
     statusParam:
       name: status
       in: query
@@ -40,7 +42,6 @@ components:
       schema:
         type: string
 
-    # Path parameters
     collectivityIdParam:
       name: id
       in: path
@@ -55,9 +56,6 @@ components:
       schema:
         type: integer
 
-  #=================================
-  # Schemas - Exception responses
-  #=================================
   schemas:
 
     Exception:
@@ -405,4 +403,253 @@ components:
       content:
         application/json:
           schema:
+            $ref: '#/components/schemas/InternalServerException'
+
+paths:
+
+  /collectivities:
+    post:
+      tags:
+        - Collectivity
+      summary: Create a new agricultural collectivity
+      description: Creates a new collectivity in pending status for approval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectivityCreate'
+      responses:
+        '201':
+          description: New collectivity created successfully (pending approval)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '400':
+          $ref: '#/components/responses/400'
+    get:
+      tags:
+        - Collectivity
+      summary: List all collectivities
+      description: Returns a list of all agricultural collectivities
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum:
+              - pending
+              - approved
+              - rejected
+        - name: city
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of collectivities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collectivity'
+
+  /collectivities/{id}:
+    get:
+      tags:
+        - Collectivity
+      summary: Get collectivity by ID
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+      responses:
+        '200':
+          description: Specific collectivity with all its informations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /collectivities/{id}/authorize:
+    post:
+      tags:
+        - Collectivity
+      summary: Authorize a collectivity
+      description: Approves a pending collectivity (requires authentication)
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+              example:
+                comment: All conditions verified - Approved
+      responses:
+        '200':
+          description: Collectivity authorized successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '404':
+          $ref: '#/components/responses/404'
+        '422':
+          $ref: '#/components/responses/422'
+
+  /collectivities/{id}/reject:
+    post:
+      tags:
+        - Collectivity
+      summary: Reject a collectivity
+      description: Rejects a pending collectivity (requires authentication)
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+              example:
+                reason: Insufficient number of members with 6 months seniority
+      responses:
+        '200':
+          description: Collectivity rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+        '422':
+          $ref: '#/components/responses/422'
+
+
+  /members:
+    post:
+      tags:
+        - Member
+      summary: Register a new member
+      description: Creates a new member in a collectivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Member'
+      responses:
+        '201':
+          description: New member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/400'
+
+  /members/{id}/collectivity:
+    put:
+      tags:
+        - Member
+      summary: Transfer member to another collectivity
+      description: Updates the collectivity association for a member
+      parameters:
+        - $ref: '#/components/parameters/memberIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newCollectivityId:
+                  type: integer
+              required:
+                - newCollectivityId
+      responses:
+        '200':
+          description: Member collectivity admission updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '400':
+          $ref: '#/components/responses/400'
+        '404':
+          $ref: '#/components/responses/404'
+
+  /members/{id}:
+    delete:
+      tags:
+        - Member
+      summary: Remove a member
+      description: Deletes a member from the system
+      parameters:
+        - $ref: '#/components/parameters/memberIdParam'
+      responses:
+        '204':
+          description: Member removed successfully
+        '404':
+          $ref: '#/components/responses/404'
+
+
+  /contributions:
+    post:
+      tags:
+        - Contribution
+      summary: Register a contribution
+      description: Records a new contribution from a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Contribution'
+      responses:
+        '201':
+          description: Contribution registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contribution'
+        '400':
+          $ref: '#/components/responses/400'
+
+  /federation/contributions/percentage:
+    get:
+      tags:
+        - Contribution
+      summary: Get federation contribution percentage
+      description: Returns the percentage of dues paid to the federation
+      responses:
+        '200':
+          description: Percentage of dues paid to the federation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  percentage:
+                    type: number
+                    format: double
+                    example: 15.5
+                required:
+                  - percentage
             $ref: '#/components/schemas/InternalServerException'
