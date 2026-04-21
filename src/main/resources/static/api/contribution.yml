@@ -9,33 +9,30 @@ info:
 servers:
   - url: 'http://localhost:8080'
 paths:
-  /collectivities/{id}/membership-fee:
+  /contributions:
     post:
       tags:
         - Contribution
-      parameters:
-        $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "./openapi.yml#/components/schemas/MembershipFee"
+              $ref: "./openapi.yml#/components/schemas/Contribution"
       responses:
         201:
-          description: Membership fee registered successfully
+          description: Contribution registered successfully
           content:
             application/json:
               schema:
-                $ref: "./openapi.yml#/components/schemas/MembershipFee"
+                $ref: "./openapi.yml#/components/schemas/Contribution"
         400:
           description: Invalid data or conditions not met
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Bad request
-  /federation/membership-fee/percentage:
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
+  /federation/contributions/percentage:
     get:
       responses:
         200:

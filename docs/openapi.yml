@@ -62,9 +62,6 @@ components:
 
     Exception:
       type: object
-      required:
-        - type
-        - message
       properties:
         type:
           type: string
@@ -76,11 +73,11 @@ components:
     BadRequestException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-        - type: object
-          properties:
-            field:
-              type: string
-              description: Field that caused the error
+      type: object
+      properties:
+        field:
+          type: string
+          description: Field that caused the error
       example:
         type: BadRequestException
         message: Invalid request body
@@ -103,14 +100,14 @@ components:
     ResourceNotFoundException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-        - type: object
-          properties:
-            resourceType:
-              type: string
-              description: Type of resource (e.g., Member, Collectivity)
-            resourceId:
-              type: integer
-              description: ID of the missing resource
+      type: object
+      properties:
+        resourceType:
+          type: string
+          description: Type of resource (e.g., Member, Collectivity)
+        resourceId:
+          type: integer
+          description: ID of the missing resource
       example:
         type: ResourceNotFoundException
         message: Resource of type Member identified by 123 not found
@@ -127,14 +124,14 @@ components:
     BusinessRuleViolationException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-        - type: object
-          properties:
-            rule:
-              type: string
-              description: Business rule that was violated
-            details:
-              type: object
-              description: Additional details about the violation
+      type: object
+      properties:
+        rule:
+          type: string
+          description: Business rule that was violated
+        details:
+          type: object
+          description: Additional details about the violation
       example:
         type: BusinessRuleViolationException
         message: Business rule not respected
@@ -299,52 +296,10 @@ components:
 
     CollectivityUpdate:
       type: object
+      description: Fields that can be updated
       properties:
         name:
           type: string
-        specialty:
-          type: string
-        city:
-          type: string
-
-    Contribution:
-      type: object
-      required:
-        - amount
-        - collectionDate
-        - paymentMethod
-        - type
-        - memberId
-        - collectivityId
-      properties:
-        id:
-          type: integer
-        amount:
-          type: number
-          format: double
-        collectionDate:
-          type: string
-          format: date
-        paymentMethod:
-          type: string
-          enum:
-            - cash
-            - bank_transfer
-            - mobile_money
-        type:
-          type: string
-          enum:
-            - admission
-            - monthly
-            - annual
-            - one_time
-        federationPercentage:
-          type: number
-          format: double
-        memberId:
-          type: integer
-        collectivityId:
-          type: integer
         specialty:
           type: string
         city:
