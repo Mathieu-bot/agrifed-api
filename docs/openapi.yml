@@ -7,6 +7,54 @@ info:
     This file contains reusable components (schemas, parameters, responses).
 
 components:
+
+  parameters:
+    # Pagination
+    pageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+
+    limitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 20
+
+    # Collectivity filters
+    statusParam:
+      name: status
+      in: query
+      schema:
+        type: string
+        enum:
+          - pending
+          - approved
+          - rejected
+
+    cityParam:
+      name: city
+      in: query
+      schema:
+        type: string
+
+    # Path parameters
+    collectivityIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+    memberIdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
   #=================================
   # Schemas - Exception responses
   #=================================
