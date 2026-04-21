@@ -38,7 +38,7 @@ paths:
       tags:
         - Member
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/MemberIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/memberIdParam"
       requestBody:
         required: true
         content:
@@ -73,7 +73,7 @@ paths:
   /members/{id}:
     delete:
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/MemberIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/memberIdParam"
       responses:
         204:
           description: Member removed successfully

@@ -294,12 +294,47 @@ components:
         - creationDate
         - federationId
 
-    CollectivityUpdate:
+CollectivityUpdate:
       type: object
-      description: Fields that can be updated
       properties:
         name:
           type: string
+        specialty:
+          type: string
+        city:
+          type: string
+
+    Contribution:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: number
+          format: double
+        collectionDate:
+          type: string
+          format: date
+        paymentMethod:
+          type: string
+          enum:
+            - cash
+            - bank_transfer
+            - mobile_money
+        type:
+          type: string
+          enum:
+            - admission
+            - monthly
+            - annual
+            - one_time
+        federationPercentage:
+          type: number
+          format: double
+        memberId:
+          type: integer
+        collectivityId:
+          type: integer
         specialty:
           type: string
         city:

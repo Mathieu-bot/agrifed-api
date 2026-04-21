@@ -49,7 +49,7 @@ paths:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       responses:
         200:
           description: Specific collectivity with all its informations
@@ -69,7 +69,7 @@ paths:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       security:
         - basicAuth: [ ]
       requestBody:
@@ -109,7 +109,7 @@ paths:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       security:
         - basicAuth: [ ]
       requestBody:
