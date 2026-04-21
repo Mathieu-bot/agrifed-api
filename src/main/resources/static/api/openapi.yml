@@ -2,30 +2,24 @@ openapi: 3.0.3
 info:
   title: Federation of Agricultural Collectivities - API
   version: 1.0.0
-  description: |
-    API for managing the Federation of Agricultural Collectivities in Madagascar.
-    This file contains all endpoints with reusable components (schemas, parameters, responses).
+  description: API for managing the Federation of Agricultural Collectivities in Madagascar.
 servers:
   - url: 'http://localhost:8080'
 
 components:
 
   parameters:
-    # Pagination
     pageParam:
       name: page
       in: query
       schema:
         type: integer
-
     limitParam:
       name: limit
       in: query
       schema:
         type: integer
         default: 20
-
-    # Collectivity filters
     statusParam:
       name: status
       in: query
@@ -35,71 +29,59 @@ components:
           - pending
           - approved
           - rejected
-
     cityParam:
       name: city
       in: query
       schema:
         type: string
-
-    # Date range parameters
     beginParam:
       name: beginning
       in: query
       schema:
         type: string
         format: date
-
     endParam:
       name: end
       in: query
       schema:
         type: string
         format: date
-
-    # Path parameters
     collectivityIdParam:
       name: id
       in: path
       required: true
       schema:
         type: integer
-
     collectivityNumberParam:
       name: number
       in: path
       required: true
       schema:
         type: string
-
     collectivityNameParam:
       name: name
       in: path
       required: true
       schema:
         type: string
-
     memberIdParam:
       name: id
       in: path
       required: true
       schema:
         type: integer
-
     membershipApplicationIdParam:
       name: id
       in: path
       required: true
       schema:
         type: integer
-
     activityIdParam:
       name: id
       in: path
       required: true
       schema:
         type: integer
-
     accountIdParam:
       name: id
       in: path
@@ -107,9 +89,6 @@ components:
       schema:
         type: integer
 
-  #=================================
-  # Schemas - Exception responses
-  #=================================
   schemas:
 
     Exception:
@@ -126,38 +105,18 @@ components:
     BadRequestException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: BadRequestException
-        message: Invalid request
-
     UnauthorizedException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: UnauthorizedException
-        message: Authentication required
-
     NotAuthorizedException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: NotAuthorizedException
-        message: Insufficient permissions
-
     ResourceNotFoundException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: ResourceNotFoundException
-        message: Resource not found
-
     ConflictException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: ConflictException
-        message: Resource already exists
-
     BusinessRuleViolationException:
       allOf:
         - $ref: '#/components/schemas/Exception'
@@ -165,17 +124,9 @@ components:
           properties:
             rule:
               type: string
-      example:
-        type: BusinessRuleViolationException
-        message: Business rule not respected
-        rule: COLLECTIVITY_MIN_MEMBERS
-
     InternalServerException:
       allOf:
         - $ref: '#/components/schemas/Exception'
-      example:
-        type: InternalServerException
-        message: Internal error
 
     Pagination:
       type: object
@@ -369,16 +320,6 @@ components:
     CollectivityCreate:
       allOf:
         - $ref: '#/components/schemas/Collectivity'
-
-    CollectivityUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-        specialty:
-          type: string
-        city:
-          type: string
 
     Activity:
       type: object
@@ -578,7 +519,6 @@ components:
         positionId:
           type: integer
 
-    # Statistics schemas
     CollectivityStatistics:
       type: object
       properties:
@@ -629,42 +569,36 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BadRequestException'
-
     '401':
       description: Unauthorized
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/UnauthorizedException'
-
     '403':
       description: Forbidden
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/NotAuthorizedException'
-
     '404':
       description: Not found
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ResourceNotFoundException'
-
     '409':
       description: Conflict
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ConflictException'
-
     '422':
       description: Business rule violation
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/BusinessRuleViolationException'
-
     '500':
       description: Internal server error
       content:
@@ -673,10 +607,6 @@ components:
             $ref: '#/components/schemas/InternalServerException'
 
 paths:
-
-  #=================================
-  # Section A - Collectivities (CRUD)
-  #=================================
 
   /collectivities:
     post:
@@ -836,10 +766,68 @@ paths:
         '422':
           $ref: '#/components/responses/422'
 
+  /collectivities/{id}/statistics/monthly:
+    get:
+      tags:
+        - Collectivity
+      summary: Get collectivity monthly report
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Monthly report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  attendanceRate:
+                    type: number
+                    format: double
+                  memberCount:
+                    type: integer
 
-  #=================================
-  # Section B - Members (CRUD)
-  #=================================
+  /collectivities/{id}/statistics/attendance-rate:
+    get:
+      tags:
+        - Collectivity
+      summary: Get global attendance rate
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+      responses:
+        '200':
+          description: Attendance rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rate:
+                    type: number
+                    format: double
+
+  /collectivities/{id}/statistics/member-count:
+    get:
+      tags:
+        - Collectivity
+      summary: Get member count
+      parameters:
+        - $ref: '#/components/parameters/collectivityIdParam'
+      responses:
+        '200':
+          description: Member count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
 
   /members:
     post:
@@ -934,7 +922,6 @@ paths:
         '404':
           $ref: '#/components/responses/404'
 
-  # Member statistics with period
   /members/{id}/attendance:
     get:
       tags:
@@ -997,12 +984,6 @@ paths:
                   unpaid:
                     type: number
                     format: double
-
-
-  #=================================
-  # Section B-2 - Membership Applications
-  # (NEW admission procedure)
-  #=================================
 
   /membership-applications:
     post:
@@ -1132,11 +1113,6 @@ paths:
         '422':
           $ref: '#/components/responses/422'
 
-
-  #=================================
-  # Section C - Contributions
-  #=================================
-
   /contributions:
     post:
       tags:
@@ -1188,11 +1164,6 @@ paths:
                   percentage:
                     type: number
                     format: double
-
-
-  #=================================
-  # Section D - Accounts
-  #=================================
 
   /accounts:
     post:
@@ -1280,11 +1251,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedResponse'
 
-
-  #=================================
-  # Section E - Activities
-  #=================================
-
   /activities:
     post:
       tags:
@@ -1348,11 +1314,6 @@ paths:
                 $ref: '#/components/schemas/Activity'
         '404':
           $ref: '#/components/responses/404'
-
-
-  #=================================
-  # Section F - Attendance
-  #=================================
 
   /attendances:
     post:
@@ -1430,11 +1391,6 @@ paths:
                 $ref: '#/components/schemas/Attendance'
         '404':
           $ref: '#/components/responses/404'
-
-
-  #=================================
-  # Section H - Governance
-  #=================================
 
   /terms:
     post:
@@ -1521,11 +1477,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedResponse'
 
-
-  #=================================
-  # Section I - Federation
-  #=================================
-
   /federation:
     get:
       tags:
@@ -1556,57 +1507,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedResponse'
-
-  /federation/collectivities/{id}:
-    get:
-      tags:
-        - Federation
-      summary: Get federation collectivity by ID
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /federation/collectivities/by-number/{number}:
-    get:
-      tags:
-        - Federation
-      summary: Get federation collectivity by number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
-
-  /federation/collectivities/by-name/{name}:
-    get:
-      tags:
-        - Federation
-      summary: Get federation collectivity by name
-      parameters:
-        - $ref: '#/components/parameters/collectivityNameParam'
-      responses:
-        '200':
-          description: Collectivity details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Collectivity'
-        '404':
-          $ref: '#/components/responses/404'
 
   /federation/accounts:
     get:
@@ -1652,127 +1552,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedResponse'
 
-
-  #=================================
-  # Section J - Collectivity Alternative Paths (by number)
-  #=================================
-
-  # Alternative: accounts by collectivity number
-  /collectivities/by-number/{number}/accounts:
-    get:
-      tags:
-        - Collectivity
-      summary: List collectivity accounts by number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-      responses:
-        '200':
-          description: List of accounts
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  # Alternative: activities by collectivity number
-  /collectivities/by-number/{number}/activities:
-    get:
-      tags:
-        - Collectivity
-      summary: List collectivity activities by number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-      responses:
-        '200':
-          description: List of activities
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedResponse'
-
-  # Alternative: member statistics by collectivity number
-  /collectivities/by-number/{number}/members/{memberId}/attendance:
-    get:
-      tags:
-        - Collectivity
-      summary: Member attendance by collectivity number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Attendance rate
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rate:
-                    type: number
-                    format: double
-
-  /collectivities/by-number/{number}/members/{memberId}/encaissement:
-    get:
-      tags:
-        - Collectivity
-      summary: Member encaissement by collectivity number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Total paid
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  total:
-                    type: number
-                    format: double
-
-  /collectivities/by-number/{number}/members/{memberId}/unpaid:
-    get:
-      tags:
-        - Collectivity
-      summary: Member unpaid by collectivity number
-      parameters:
-        - $ref: '#/components/parameters/collectivityNumberParam'
-        - name: memberId
-          in: path
-          required: true
-          schema:
-            type: integer
-        - $ref: '#/components/parameters/beginParam'
-        - $ref: '#/components/parameters/endParam'
-      responses:
-        '200':
-          description: Unpaid amount
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  unpaid:
-                    type: number
-                    format: double
-
-
-  #=================================
-  # Section H - Statistics Endpoints
-  #=================================
-
   /federation/statistics:
     get:
       tags:
@@ -1808,67 +1587,3 @@ paths:
                 $ref: '#/components/schemas/CollectivityStatistics'
         '404':
           $ref: '#/components/responses/404'
-
-  # Collectivity monthly statistics (via ID or number)
-  /collectivities/{id}/statistics/monthly:
-    get:
-      tags:
-        - Collectivity
-      summary: Get collectivity monthly report
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-        - name: date
-          in: query
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: Monthly report
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  attendanceRate:
-                    type: number
-                    format: double
-                  memberCount:
-                    type: integer
-
-  /collectivities/{id}/statistics/attendance-rate:
-    get:
-      tags:
-        - Collectivity
-      summary: Get global attendance rate
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Attendance rate
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  rate:
-                    type: number
-                    format: double
-
-  /collectivities/{id}/statistics/member-count:
-    get:
-      tags:
-        - Collectivity
-      summary: Get member count
-      parameters:
-        - $ref: '#/components/parameters/collectivityIdParam'
-      responses:
-        '200':
-          description: Member count
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  count:
-                    type: integer
