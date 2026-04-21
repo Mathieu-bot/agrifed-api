@@ -1659,8 +1659,5 @@ paths:
               schema:
                 $ref: '#/components/schemas/CollectivityStatistics'
         '404':
-<<<<<<< Updated upstream
           $ref: '#/components/responses/404'
-=======
-          $ref: '#/components/responses/404'
->>>>>>> Stashed changes
+
