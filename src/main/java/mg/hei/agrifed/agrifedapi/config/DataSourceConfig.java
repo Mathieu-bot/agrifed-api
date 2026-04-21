@@ -16,18 +16,25 @@ public class DataSourceConfig {
             .load();
 
     @Bean
-    public Connection dataSource() {
-        try {
-            Class.forName("org.postgresql.Driver");
-            return DriverManager.getConnection(
-                    DOTENV.get("JDBC_URL"),
-                    DOTENV.get("USERNAME"),
-                    DOTENV.get("PASSWORD")
-            );
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("PostgreSQL JDBC Driver not found", e);
-        } catch (SQLException e) {
-            throw new RuntimeException("Unable to connect to database", e);
+    public DataSource dataSource() {
+        return new DataSource();
+    }
+
+    public static class DataSource {
+
+        public Connection getConnection() {
+            try {
+                Class.forName("org.postgresql.Driver");
+                return DriverManager.getConnection(
+                        DOTENV.get("JDBC_URL"),
+                        DOTENV.get("USERNAME"),
+                        DOTENV.get("PASSWORD")
+                );
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("PostgreSQL JDBC Driver not found", e);
+            } catch (SQLException e) {
+                throw new RuntimeException("Unable to connect to database", e);
+            }
         }
     }
 }
