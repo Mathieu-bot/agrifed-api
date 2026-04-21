@@ -29,10 +29,9 @@ paths:
         400:
           description: Invalid data or conditions not met
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Bad request
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
   /federation/contributions/percentage:
     get:
       responses:
