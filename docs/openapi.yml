@@ -135,6 +135,128 @@ components:
         pagination:
           $ref: '#/components/schemas/Pagination'
 
+    Federation:
+      type: object
+      description: Top-level organization grouping agricultural collectivities
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+
+    Position:
+      type: object
+      description: Role held by a member within an entity
+      properties:
+        id:
+          type: integer
+        label:
+          type: string
+          enum:
+            - president
+            - vice_president
+            - treasurer
+            - secretary
+            - confirmed_member
+            - junior_member
+        context:
+          type: string
+          enum:
+            - both
+            - collectivity
+            - federation
+
+    Member:
+      type: object
+      description: Person who is a member of a collectivity
+      properties:
+        id:
+          type: integer
+        lastname:
+          type: string
+        firstname:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        gender:
+          type: string
+          enum:
+            - male
+            - female
+        address:
+          type: string
+        occupation:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        membershipDate:
+          type: string
+          format: date
+
+    Collectivity:
+      type: object
+      description: Local agricultural collectivity affiliated to federation
+      properties:
+        id:
+          type: integer
+        number:
+          type: string
+        name:
+          type: string
+        specialty:
+          type: string
+        city:
+          type: string
+        creationDate:
+          type: string
+          format: date
+        federationId:
+          type: integer
+        status:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+          default: pending
+        authorizedBy:
+          type: integer
+          nullable: true
+        authorizationDate:
+          type: string
+          format: date
+          nullable: true
+        rejectionReason:
+          type: string
+          nullable: true
+
+    CollectivityCreate:
+      allOf:
+        - $ref: '#/components/schemas/Collectivity'
+      type: object
+      required:
+        - number
+        - name
+        - specialty
+        - city
+        - creationDate
+        - federationId
+
+    CollectivityUpdate:
+      type: object
+      description: Fields that can be updated
+      properties:
+        name:
+          type: string
+        specialty:
+          type: string
+        city:
+          type: string
+
   responses:
     '400':
       description: Bad request - validation error
