@@ -1,0 +1,156 @@
+openapi: 3.1.0
+info:
+  title: Federation of Agricultural Collectivities - API
+  description:
+    API for managing the Federation of Agricultural Collectivities in Madagascar.
+    This file contains the endpoints for opening and creating new agricultural collectivities (Part A).
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /collectivities:
+    post:
+      tags:
+        - Collectivity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yml#/components/schemas/Collectivity"
+      responses:
+        201:
+          description: New collectivity created successfully(pending approval)
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        400:
+          description: All conditions are not met
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Bad request
+    get:
+      tags:
+        - Collectivity
+      responses:
+        200:
+          description: List of collectivities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "./openapi.yml#/#/components/schemas/Collectivity"
+  /collectivities/{id}:
+    get:
+      tags:
+        - Collectivity
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+      responses:
+        200:
+          description: Specific collectivity with all its informations
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        404:
+          description: Collectivity not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Collectivity not found
+  /collectivities/{id}/authorize:
+    post:
+      tags:
+        - Collectivity
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  type: string
+              example:
+                comment: All conditions verified - Approved
+      responses:
+        200:
+          description: Collectivity created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        404:
+          description: Collectivity not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Collectivity not found
+        422:
+          description: Collectivity cannot be authorized (conditions not met or already processed)
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Unprocessable Entity
+  /collectivities/{id}/reject:
+    post:
+      tags:
+        - Collectivity
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+      security:
+        - basicAuth: [ ]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+              example:
+                 reason: Insufficient number of members with 6 months seniority
+      responses:
+        200:
+          description: Collectivity rejected
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Collectivity"
+        400:
+          description: Bad request
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Bad request
+        404:
+          description: Collectivity not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Collectivity not found
+        422:
+          description: Collectivity cannot be rejected (already authorized or invalid state)
+          content:
+            text/plain:
+              schema:
+                type: string
+              example:  Collectivity cannot be rejected (already authorized or invalid state)
+
+
+  
