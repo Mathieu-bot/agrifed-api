@@ -2,7 +2,7 @@ openapi: 3.2.0
 info:
   title: Federation of Agricultural Collectivities - API
   version: 1.0.0
-  description: >
+  description:
     API for managing the Federation of Agricultural Collectivities in Madagascar.
     This file contains reusable components (schemas, parameters, responses).
 
@@ -12,6 +12,7 @@ servers:
 components:
 
   parameters:
+  
     pageParam:
       name: page
       in: query
@@ -249,7 +250,8 @@ components:
       type: object
       description: Local agricultural collectivity affiliated to federation
       properties:
-
+        id:
+          type: integer
         number:
           type: string
         name:
@@ -341,6 +343,10 @@ components:
           type: integer
         collectivityId:
           type: integer
+        specialty:
+          type: string
+        city:
+          type: string
 
   responses:
     '400':
@@ -646,3 +652,4 @@ paths:
                     example: 15.5
                 required:
                   - percentage
+            $ref: '#/components/schemas/InternalServerException'

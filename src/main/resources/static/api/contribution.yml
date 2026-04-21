@@ -1,0 +1,50 @@
+openapi: 3.2.0
+info:
+  title: Federation of Agricultural Collectivities - API
+  description:
+    This file contains the endpoints related to member contributions, membership fees
+    and payments to the collectivity, as well as the percentage of periodic contributions
+    transferred to the national federation (Part C).
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /contributions:
+    post:
+      tags:
+        - Contribution
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yml#/components/schemas/Contribution"
+      responses:
+        201:
+          description: Contribution registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Contribution"
+        400:
+          description: Invalid data or conditions not met
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
+  /federation/contributions/percentage:
+    get:
+      responses:
+        200:
+          description: Percentage of dues paid to the federation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  percentage:
+                    type: number
+                    format: double
+                    example: 15.5
+                required:
+                  - percentage

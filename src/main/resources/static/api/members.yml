@@ -1,0 +1,87 @@
+openapi: 3.2.0
+info:
+  title: Federation of Agricultural Collectivities - API
+  description:
+    API for managing the Federation of Agricultural Collectivities in Madagascar.
+    This file contains the endpoints related to the admission, transfer and resignation of members 
+    within an agricultural collectivity (Part B).
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+paths:
+  /members:
+    post:
+      tags:
+        - Member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./openapi.yml#/components/schemas/Member"
+      responses:
+        201:
+          description: New member added successfully
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Member"
+        400:
+          description: All conditions are not met(first name, last name, address, etc. may be missing)
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
+  /members/{id}/collectivity:
+    put:
+      tags:
+        - Member
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/memberIdParam"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newCollectivityId:
+                  type: integer
+              required: newCollectivityId
+      responses:
+        200:
+          description: Member collectivity admission updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/Member"
+        400:
+          description: Invalid inserted data
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
+        404:
+          description: Member or collectivity not found
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/ResourceNotFoundException"
+  /members/{id}:
+    delete:
+      parameters:
+        - $ref: "./openapi.yml#/components/parameters/memberIdParam"
+      responses:
+        204:
+          description: Member removed successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Member removed successfully
+        404:
+          description: Member not found
+          content:
+            application/json:
+              schema:
+                $ref: "./openapi.yml#/components/schemas/ResourceNotFoundException"

@@ -28,10 +28,9 @@ paths:
         400:
           description: All conditions are not met
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Bad request
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
     get:
       tags:
         - Collectivity
@@ -43,13 +42,13 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "./openapi.yml#/#/components/schemas/Collectivity"
+                  $ref: "./openapi.yml#/components/schemas/Collectivity"
   /collectivities/{id}:
     get:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       responses:
         200:
           description: Specific collectivity with all its informations
@@ -60,16 +59,15 @@ paths:
         404:
           description: Collectivity not found
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Collectivity not found
+                $ref: "./openapi.yml#/components/schemas/ResourceNotFoundException"
   /collectivities/{id}/authorize:
     post:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       security:
         - basicAuth: [ ]
       requestBody:
@@ -100,16 +98,15 @@ paths:
         422:
           description: Collectivity cannot be authorized (conditions not met or already processed)
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Unprocessable Entity
+                $ref: "./openapi.yml#/components/schemas/BusinessRuleViolationException"
   /collectivities/{id}/reject:
     post:
       tags:
         - Collectivity
       parameters:
-        - $ref: "./openapi.yml#/components/parameters/CollectivityIdPathVariable"
+        - $ref: "./openapi.yml#/components/parameters/collectivityIdParam"
       security:
         - basicAuth: [ ]
       requestBody:
@@ -133,24 +130,21 @@ paths:
         400:
           description: Bad request
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Bad request
+                $ref: "./openapi.yml#/components/schemas/BadRequestException"
         404:
           description: Collectivity not found
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: Collectivity not found
+                $ref: "./openapi.yml#/components/schemas/ResourceNotFoundException"
         422:
           description: Collectivity cannot be rejected (already authorized or invalid state)
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example:  Collectivity cannot be rejected (already authorized or invalid state)
+                $ref: "./openapi.yml#/components/schemas/BusinessRuleViolationException"
 
 
   
