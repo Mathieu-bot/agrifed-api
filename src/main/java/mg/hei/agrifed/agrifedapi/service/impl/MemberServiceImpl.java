@@ -13,6 +13,7 @@ import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
+import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -160,7 +161,7 @@ public class MemberServiceImpl implements MemberService {
 
     private GenderEnum mapGenderToEntity(Gender gender) {
         if (gender == null) return null;
-        return GenderEnum.valueOf(gender.name());
+        return EnumConverter.fromDb(gender.name(), GenderEnum.class);
     }
 
     private MemberDto mapToDto(Member entity) {
