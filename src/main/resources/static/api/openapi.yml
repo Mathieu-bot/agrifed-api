@@ -5,7 +5,7 @@ info:
     # Versioning
     This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are : 
     - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
-    - v0.0.2 (2026-04-22) : POST /collectivities/{id}/assign for name and number assignment by federation.
+    - v0.0.2 (2026-04-22) : PUT /collectivities/{id}/informations for name and number assignment by federation.
   version: 0.0.2
 servers:
   - url: 'https://localhost:8080'
@@ -33,14 +33,14 @@ paths:
                 items:
                   $ref: '#/components/schemas/Collectivity'
         400:
-          description: Collectivity without federation approval or structure missing.
+          description: Structure missing or invalid members.
         404:
           description: Member not found.
-  '/collectivities/{id}/assign':
-    post:
-      summary: Assign name and number to a collectivity
+  '/collectivities/{id}/informations':
+    put:
+      summary: Attribute collectivity informations to specific collectivity
       description: |
-        Federation assigns a name and number to a collectivity.
+        Federation assigns name and number to a collectivity and approves it.
       parameters:
         - name: id
           in: path
@@ -53,10 +53,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssignCollectivity'
+              $ref: '#/components/schemas/CollectivityInformation'
       responses:
         200:
-          description: Collectivity assigned successfully
+          description: Collectivity with updated information
           content:
             application/json:
               schema:
@@ -67,7 +67,7 @@ paths:
           description: Collectivity not found.
         409:
           description: |
-            Conflict - name or number already exists. 
+            Conflict - name or number already exists.
             Once assigned, name and number cannot be modified.
   '/members':
     post:
@@ -109,8 +109,6 @@ components:
           items:
             schema:
               $ref: '#/components/schemas/MemberIdentifier'
-        federationApproval:
-          type: boolean
         structure:
           $ref: '#/components/schemas/CreateCollectivityStructure'
     CreateCollectivityStructure:
@@ -124,7 +122,7 @@ components:
           $ref: '#/components/schemas/MemberIdentifier'
         secretary:
           $ref: '#/components/schemas/MemberIdentifier'
-    AssignCollectivity:
+    CollectivityInformation:
       type: object
       required:
         - name
