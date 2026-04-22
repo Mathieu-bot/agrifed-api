@@ -6,9 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Standard error response format matching OpenAPI specification.
- */
 @Data
 @Builder
 @NoArgsConstructor
