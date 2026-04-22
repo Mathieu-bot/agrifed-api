@@ -159,9 +159,9 @@ components:
         status:
           type: string
           enum:
-            - pending
-            - approved
-            - rejected
+            - PENDING
+            - APPROVED
+            - REJECTED
         structure:
           $ref: '#/components/schemas/CollectivityStructure'
         members:

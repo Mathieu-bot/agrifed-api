@@ -2,10 +2,6 @@ package mg.hei.agrifed.agrifedapi.entity;
 
 import lombok.*;
 
-/**
- * Entity representing the bureau (executive structure) of a collectivity.
- * Contains positions: president, vice-president, treasurer, secretary.
- */
 @Getter
 @Setter
 @NoArgsConstructor
