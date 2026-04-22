@@ -4,11 +4,10 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@AllArgsConstructor
+@Getter
+@Setter
 @NoArgsConstructor
-@Data
-@EqualsAndHashCode
-@ToString
+@AllArgsConstructor
 public class Member {
     private Integer id;
     private String lastName;
@@ -19,5 +18,7 @@ public class Member {
     private String occupation;
     private String phone;
     private String email;
-    private String membershipDate;
+    private LocalDate membershipDate;
+    private Boolean registrationFeePaid;
+    private Boolean membershipDuesPaid;
 }

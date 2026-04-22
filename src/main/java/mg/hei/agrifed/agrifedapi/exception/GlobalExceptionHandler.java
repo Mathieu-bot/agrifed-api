@@ -1,86 +1,161 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
-import lombok.Getter;
+import mg.hei.agrifed.agrifedapi.dto.ErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import java.time.LocalDateTime;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+import java.sql.SQLException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @Getter
-    private static class ErrorResponse {
-        private final String type;
-        private final String message;
-        private final String rule;
-        private final LocalDateTime timestamp = LocalDateTime.now();
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-        public ErrorResponse(String type, String message) {
-            this(type, message, null);
-        }
+    // ==================== SQLException ====================
 
-        public ErrorResponse(String type, String message, String rule) {
-            this.type = type;
-            this.message = message;
-            this.rule = rule;
-        }
+    @ExceptionHandler(SQLException.class)
+    public ResponseEntity<ErrorResponse> handleSqlException(SQLException ex) {
+        logger.error("SQL error: {}", ex.getMessage(), ex);
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("InternalServerException")
+                .message("Database error: " + ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
-        StringBuilder sb = new StringBuilder("Validation errors: ");
-        ex.getBindingResult().getFieldErrors().forEach(e ->
-                sb.append(e.getField()).append(" - ").append(e.getDefaultMessage()).append("; "));
-
-        return buildResponse("VALIDATION_ERROR", sb.toString(), HttpStatus.BAD_REQUEST);
-    }
+    // ==================== BadRequestException ====================
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
-        return buildResponse("BAD_REQUEST", ex.getMessage(), HttpStatus.BAD_REQUEST);
+        logger.warn("Bad request: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("BadRequestException")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.badRequest().body(error);
     }
+
+    // ==================== NotFoundException ====================
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+        logger.warn("Not found: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("ResourceNotFoundException")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    // ==================== ResourceNotFoundException ====================
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        logger.warn("Resource not found: {} with id {}", ex.getResourceType(), ex.getResourceId());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("ResourceNotFoundException")
+                .message(ex.getMessage())
+                .resourceType(ex.getResourceType())
+                .resourceId(ex.getResourceId())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    // ==================== UnauthorizedException ====================
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ErrorResponse> handleUnauthorized(UnauthorizedException ex) {
-        return buildResponse("UNAUTHORIZED", ex.getMessage(), HttpStatus.UNAUTHORIZED);
+        logger.warn("Unauthorized: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("UnauthorizedException")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
+
+    // ==================== NotAuthorizedException ====================
 
     @ExceptionHandler(NotAuthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleForbidden(NotAuthorizedException ex) {
-        return buildResponse("FORBIDDEN", ex.getMessage(), HttpStatus.FORBIDDEN);
+    public ResponseEntity<ErrorResponse> handleNotAuthorized(NotAuthorizedException ex) {
+        logger.warn("Not authorized: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("NotAuthorizedException")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
-    @ExceptionHandler({
-            ResourceNotFoundException.class, MemberNotFoundException.class,
-            CollectivityNotFoundException.class, MandateNotFoundException.class,
-            ActivityNotFoundException.class
-    })
-    public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException ex) {
-        return buildResponse("NOT_FOUND", ex.getMessage(), HttpStatus.NOT_FOUND);
+    // ==================== BusinessRuleViolationException ====================
+ 
+    @ExceptionHandler(BusinessRuleViolationException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleViolationException ex) {
+        logger.warn("Business rule violation: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("BusinessRuleViolationException")
+                .message(ex.getMessage())
+                .rule(ex.getRule())
+                .details(ex.getDetails())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
+
+    // ==================== ConflictException ====================
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
-        return buildResponse("CONFLICT", ex.getMessage(), HttpStatus.CONFLICT);
+        logger.warn("Conflict: {}", ex.getMessage());
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("ConflictException")
+                .message(ex.getMessage())
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
-    @ExceptionHandler(BusinessRuleViolationException.class)
-    public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleViolationException ex) {
-        return new ResponseEntity<>(new ErrorResponse("BUSINESS_RULE_VIOLATION", ex.getMessage(), ex.getRule()),
-                HttpStatus.UNPROCESSABLE_ENTITY);
+    // ==================== DatabaseException ====================
+
+    @ExceptionHandler(DatabaseException.class)
+    public ResponseEntity<ErrorResponse> handleDatabase(DatabaseException ex) {
+        logger.error("Database error: {}", ex.getMessage(), ex);
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("InternalServerException")
+                .message("Database error occurred")
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
+
+    // ==================== Generic Exception (catch-all) ====================
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-        return buildResponse("INTERNAL_SERVER_ERROR",
-                "Une erreur interne est survenue. Veuillez contacter l'administrateur.",
-                HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    private ResponseEntity<ErrorResponse> buildResponse(String type, String message, HttpStatus status) {
-        return new ResponseEntity<>(new ErrorResponse(type, message), status);
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+        logger.error("Unexpected error: {}", ex.getMessage(), ex);
+        
+        ErrorResponse error = ErrorResponse.builder()
+                .type("InternalServerException")
+                .message("Unexpected error occurred")
+                .build();
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }

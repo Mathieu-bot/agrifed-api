@@ -18,20 +18,19 @@ ALTER TABLE collectivity ADD COLUMN federation_approval BOOLEAN DEFAULT FALSE;
 -- ------------------------------------------------------------
 -- Create collectivity_structure table
 -- Description: Bureau of a collectivity (president, vice-president, treasurer, secretary)
--- Note: Simplified version for v0.0.1. For full history, use collectivity_term + position tables.
 -- ------------------------------------------------------------
 CREATE TABLE collectivity_structure (
-                                        id SERIAL PRIMARY KEY,
-                                        collectivity_id INTEGER NOT NULL,
-                                        president_id INTEGER,
-                                        vice_president_id INTEGER,
-                                        treasurer_id INTEGER,
-                                        secretary_id INTEGER,
-                                        CONSTRAINT collectivity_structure_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE,
-                                        CONSTRAINT collectivity_structure_president_FK FOREIGN KEY (president_id) REFERENCES member(id) ON DELETE SET NULL,
-                                        CONSTRAINT collectivity_structure_vice_president_FK FOREIGN KEY (vice_president_id) REFERENCES member(id) ON DELETE SET NULL,
-                                        CONSTRAINT collectivity_structure_treasurer_FK FOREIGN KEY (treasurer_id) REFERENCES member(id) ON DELETE SET NULL,
-                                        CONSTRAINT collectivity_structure_secretary_FK FOREIGN KEY (secretary_id) REFERENCES member(id) ON DELETE SET NULL
+    id SERIAL PRIMARY KEY,
+    collectivity_id INTEGER NOT NULL,
+    president_id INTEGER,
+    vice_president_id INTEGER,
+    treasurer_id INTEGER,
+    secretary_id INTEGER,
+    CONSTRAINT collectivity_structure_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE,
+    CONSTRAINT collectivity_structure_president_FK FOREIGN KEY (president_id) REFERENCES member(id) ON DELETE SET NULL,
+    CONSTRAINT collectivity_structure_vice_president_FK FOREIGN KEY (vice_president_id) REFERENCES member(id) ON DELETE SET NULL,
+    CONSTRAINT collectivity_structure_treasurer_FK FOREIGN KEY (treasurer_id) REFERENCES member(id) ON DELETE SET NULL,
+    CONSTRAINT collectivity_structure_secretary_FK FOREIGN KEY (secretary_id) REFERENCES member(id) ON DELETE SET NULL
 );
 
 -- ------------------------------------------------------------

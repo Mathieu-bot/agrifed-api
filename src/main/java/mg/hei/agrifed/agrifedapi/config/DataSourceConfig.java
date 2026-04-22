@@ -3,7 +3,6 @@ package mg.hei.agrifed.agrifedapi.config;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -21,7 +20,6 @@ public class DataSourceConfig {
     }
 
     public static class DataSource {
-
         public Connection getConnection() {
             try {
                 Class.forName("org.postgresql.Driver");

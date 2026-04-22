@@ -1,7 +1,21 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
 public class ResourceNotFoundException extends RuntimeException {
-    public ResourceNotFoundException(String message) {
-        super(message);
+    
+    private final String resourceType;
+    private final Integer resourceId;
+
+    public ResourceNotFoundException(String resourceType, Integer resourceId) {
+        super(String.format("Resource of type %s identified by %d not found", resourceType, resourceId));
+        this.resourceType = resourceType;
+        this.resourceId = resourceId;
+    }
+
+    public String getResourceType() {
+        return resourceType;
+    }
+
+    public Integer getResourceId() {
+        return resourceId;
     }
 }
