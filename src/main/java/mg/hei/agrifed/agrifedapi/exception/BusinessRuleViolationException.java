@@ -1,5 +1,8 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
+import lombok.Getter;
+
+@Getter
 public class BusinessRuleViolationException extends RuntimeException {
     
     private final String rule;
