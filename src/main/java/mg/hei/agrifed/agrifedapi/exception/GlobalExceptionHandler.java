@@ -10,10 +10,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.sql.SQLException;
 
-/**
- * Global exception handler returning standardized error responses
- * matching the OpenAPI specification.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
