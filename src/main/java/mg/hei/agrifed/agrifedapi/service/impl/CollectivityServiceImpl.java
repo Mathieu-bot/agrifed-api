@@ -1,6 +1,6 @@
 package mg.hei.agrifed.agrifedapi.service.impl;
 
-import mg.hei.agrifed.agrifedapi.dto.AssignCollectivityDto;
+import mg.hei.agrifed.agrifedapi.dto.CollectivityInformationDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityStructure;
 import mg.hei.agrifed.agrifedapi.dto.CreateCollectivityDto;
@@ -50,10 +50,6 @@ public class CollectivityServiceImpl implements CollectivityService {
         List<CollectivityDto> createdCollectivities = new ArrayList<>();
 
         for (CreateCollectivityDto dto : createCollectivities) {
-            if (dto.getFederationApproval() == null || !dto.getFederationApproval()) {
-                throw new BadRequestException("Collectivity requires federation approval");
-            }
-
             if (dto.getStructure() == null) {
                 throw new BadRequestException("Collectivity structure is required");
             }
@@ -104,7 +100,6 @@ public class CollectivityServiceImpl implements CollectivityService {
             entity.setCreationDate(LocalDate.now());
             entity.setFederationId(1);
             entity.setStatus("pending");
-            entity.setFederationApproval(dto.getFederationApproval());
 
             Collectivity saved = collectivityRepository.save(entity);
 
@@ -119,7 +114,7 @@ public class CollectivityServiceImpl implements CollectivityService {
                 response.setStructure(structure);
             }
 
-            if (memberIds != null && !memberIds.isEmpty()) {
+            if (!memberIds.isEmpty()) {
                 response.setMembers(memberEntities.stream()
                         .map(this::mapMemberToDto)
                         .collect(Collectors.toList()));
@@ -132,7 +127,7 @@ public class CollectivityServiceImpl implements CollectivityService {
     }
 
     @Override
-    public CollectivityDto assignNameAndNumber(String id, AssignCollectivityDto dto) {
+    public CollectivityDto assignNameAndNumber(String id, CollectivityInformationDto dto) {
         if (dto.getName() == null || dto.getName().isBlank()) {
             throw new BadRequestException("Name is required");
         }
@@ -200,7 +195,7 @@ public class CollectivityServiceImpl implements CollectivityService {
 
         List<Integer> memberIds = members.stream()
                 .map(Member::getId)
-                .collect(Collectors.toList());
+                .toList();
 
         if (structure.getPresident() == null) {
             throw new BadRequestException("President position must be filled");
@@ -215,16 +210,16 @@ public class CollectivityServiceImpl implements CollectivityService {
             throw new BadRequestException("Secretary position must be filled");
         }
 
-        if (structure.getPresident() != null && !memberIds.contains(Integer.parseInt(structure.getPresident()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getPresident()))) {
             throw new NotFoundException("President member not found");
         }
-        if (structure.getVicePresident() != null && !memberIds.contains(Integer.parseInt(structure.getVicePresident()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getVicePresident()))) {
             throw new NotFoundException("Vice president member not found");
         }
-        if (structure.getTreasurer() != null && !memberIds.contains(Integer.parseInt(structure.getTreasurer()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getTreasurer()))) {
             throw new NotFoundException("Treasurer member not found");
         }
-        if (structure.getSecretary() != null && !memberIds.contains(Integer.parseInt(structure.getSecretary()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getSecretary()))) {
             throw new NotFoundException("Secretary member not found");
         }
     }
