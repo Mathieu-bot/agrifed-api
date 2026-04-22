@@ -3,10 +3,6 @@ package mg.hei.agrifed.agrifedapi.dto;
 import lombok.Getter;
 import lombok.Setter;
 
-/**
- * Base DTO for member information.
- * Used as a base for CreateMember and Member DTOs.
- */
 @Getter
 @Setter
 public class MemberInformationDto {

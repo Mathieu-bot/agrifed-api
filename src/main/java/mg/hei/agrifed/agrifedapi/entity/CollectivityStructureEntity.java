@@ -2,10 +2,6 @@ package mg.hei.agrifed.agrifedapi.entity;
 
 import lombok.*;
 
-/**
- * Entity mapping for collectivity_structure table.
- * Represents the bureau positions of a collectivity.
- */
 @Getter
 @Setter
 @NoArgsConstructor
