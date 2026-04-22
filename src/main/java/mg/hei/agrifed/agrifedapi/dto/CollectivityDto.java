@@ -9,7 +9,10 @@ import java.util.List;
 @Setter
 public class CollectivityDto {
     private String id;
+    private String name;
+    private String number;
     private String location;
+    private String status;
     private CollectivityStructure structure;
     private List<MemberDto> members;
 }
