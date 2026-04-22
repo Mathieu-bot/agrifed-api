@@ -49,6 +49,10 @@ public class CollectivityServiceImpl implements CollectivityService {
         List<CollectivityDto> createdCollectivities = new ArrayList<>();
 
         for (CreateCollectivityDto dto : createCollectivities) {
+            if (dto.getFederationApproval() != null && dto.getFederationApproval()) {
+                throw new BadRequestException("federationApproval must be false or omitted during creation");
+            }
+
             if (dto.getStructure() == null) {
                 throw new BadRequestException("Collectivity structure is required");
             }
