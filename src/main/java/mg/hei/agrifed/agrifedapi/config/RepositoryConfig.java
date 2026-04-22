@@ -4,9 +4,11 @@ import mg.hei.agrifed.agrifedapi.config.DataSourceConfig.DataSource;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
+import mg.hei.agrifed.agrifedapi.repository.MembershipFeeRepository;
 import mg.hei.agrifed.agrifedapi.repository.impl.JdbcCollectivityRepositoryImpl;
 import mg.hei.agrifed.agrifedapi.repository.impl.JdbcCollectivityStructureRepositoryImpl;
 import mg.hei.agrifed.agrifedapi.repository.impl.JdbcMemberRepositoryImpl;
+import mg.hei.agrifed.agrifedapi.repository.impl.JdbcMembershipFeeRepositoryImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,5 +28,10 @@ public class RepositoryConfig {
     @Bean
     public CollectivityStructureRepository collectivityStructureRepository(DataSource dataSource) {
         return new JdbcCollectivityStructureRepositoryImpl(dataSource);
+    }
+
+    @Bean
+    public MembershipFeeRepository membershipFeeRepository(DataSource dataSource) {
+        return new JdbcMembershipFeeRepositoryImpl(dataSource);
     }
 }

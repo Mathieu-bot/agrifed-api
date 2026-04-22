@@ -3,10 +3,13 @@ package mg.hei.agrifed.agrifedapi.config;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
+import mg.hei.agrifed.agrifedapi.repository.MembershipFeeRepository;
 import mg.hei.agrifed.agrifedapi.service.CollectivityService;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
+import mg.hei.agrifed.agrifedapi.service.MembershipFeeService;
 import mg.hei.agrifed.agrifedapi.service.impl.CollectivityServiceImpl;
 import mg.hei.agrifed.agrifedapi.service.impl.MemberServiceImpl;
+import mg.hei.agrifed.agrifedapi.service.impl.MembershipFeeServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,5 +29,12 @@ public class ServiceConfig {
             MemberRepository memberRepository,
             CollectivityRepository collectivityRepository) {
         return new MemberServiceImpl(memberRepository, collectivityRepository);
+    }
+
+    @Bean
+    public MembershipFeeService membershipFeeService(
+            MembershipFeeRepository feeRepository,
+            CollectivityRepository collectivityRepository) {
+        return new MembershipFeeServiceImpl(feeRepository, collectivityRepository);
     }
 }
