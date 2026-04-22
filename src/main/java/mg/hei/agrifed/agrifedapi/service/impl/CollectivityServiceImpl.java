@@ -1,5 +1,6 @@
 package mg.hei.agrifed.agrifedapi.service.impl;
 
+import mg.hei.agrifed.agrifedapi.dto.AssignCollectivityDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityStructure;
 import mg.hei.agrifed.agrifedapi.dto.CreateCollectivityDto;
@@ -10,7 +11,9 @@ import mg.hei.agrifed.agrifedapi.entity.CollectivityStructureEntity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
 import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
+import mg.hei.agrifed.agrifedapi.exception.ConflictException;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
+import mg.hei.agrifed.agrifedapi.exception.ResourceNotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -92,12 +95,9 @@ public class CollectivityServiceImpl implements CollectivityService {
 
             validateStructureMembers(dto.getStructure(), memberEntities);
 
-            String number = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String name = "Collectivity " + number;
-
             Collectivity entity = new Collectivity();
-            entity.setNumber(number);
-            entity.setName(name);
+            entity.setNumber(null);
+            entity.setName(null);
             entity.setSpecialty(dto.getSpecialty());
             entity.setCity(dto.getLocation());
             entity.setLocation(dto.getLocation());
@@ -115,7 +115,7 @@ public class CollectivityServiceImpl implements CollectivityService {
             CollectivityDto response = mapToDto(saved);
 
             if (dto.getStructure() != null) {
-                CollectivityStructure structure = mapStructure(dto.getStructure());
+                CollectivityStructure structure = mapStructureFromEntity(saved.getId(), dto.getStructure());
                 response.setStructure(structure);
             }
 
@@ -129,6 +129,47 @@ public class CollectivityServiceImpl implements CollectivityService {
         }
 
         return createdCollectivities;
+    }
+
+    @Override
+    public CollectivityDto assignNameAndNumber(String id, AssignCollectivityDto dto) {
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new BadRequestException("Name is required");
+        }
+        if (dto.getNumber() == null || dto.getNumber().isBlank()) {
+            throw new BadRequestException("Number is required");
+        }
+
+        Integer collectivityId;
+        try {
+            collectivityId = Integer.parseInt(id);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Invalid collectivity ID: " + id);
+        }
+
+        Collectivity existing = collectivityRepository.findById(collectivityId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collectivity", collectivityId));
+
+        if (!"pending".equals(existing.getStatus())) {
+            throw new BadRequestException("Collectivity already has name and number assigned - cannot be modified");
+        }
+
+        boolean nameExists = collectivityRepository.findByName(dto.getName()).isPresent();
+        if (nameExists) {
+            throw new ConflictException("Collectivity name already exists: " + dto.getName());
+        }
+
+        boolean numberExists = collectivityRepository.findByNumber(dto.getNumber()).isPresent();
+        if (numberExists) {
+            throw new ConflictException("Collectivity number already exists: " + dto.getNumber());
+        }
+
+        existing.setName(dto.getName());
+        existing.setNumber(dto.getNumber());
+        existing.setStatus("approved");
+
+        Collectivity updated = collectivityRepository.update(existing);
+        return mapToDto(updated);
     }
 
     private List<Member> validateAndGetMembers(List<String> memberIds) {
@@ -211,11 +252,14 @@ public class CollectivityServiceImpl implements CollectivityService {
     private CollectivityDto mapToDto(Collectivity entity) {
         CollectivityDto dto = new CollectivityDto();
         dto.setId(String.valueOf(entity.getId()));
+        dto.setName(entity.getName());
+        dto.setNumber(entity.getNumber());
         dto.setLocation(entity.getLocation());
+        dto.setStatus(entity.getStatus());
         return dto;
     }
 
-    private CollectivityStructure mapStructure(CreateCollectivityStructure createStructure) {
+    private CollectivityStructure mapStructureFromEntity(Integer collectivityId, CreateCollectivityStructure createStructure) {
         CollectivityStructure structure = new CollectivityStructure();
 
         if (createStructure.getPresident() != null) {
