@@ -5,7 +5,8 @@ info:
     # Versioning
     This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are : 
     - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
-  version: 0.0.1
+    - v0.0.2 (2026-04-22) : POST /collectivities/{id}/assign for name and number assignment by federation.
+  version: 0.0.2
 servers:
   - url: 'https://localhost:8080'
 paths:
@@ -35,6 +36,39 @@ paths:
           description: Collectivity without federation approval or structure missing.
         404:
           description: Member not found.
+  '/collectivities/{id}/assign':
+    post:
+      summary: Assign name and number to a collectivity
+      description: |
+        Federation assigns a name and number to a collectivity.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Collectivity ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignCollectivity'
+      responses:
+        200:
+          description: Collectivity assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        400:
+          description: Invalid request or collectivity already has name/number assigned.
+        404:
+          description: Collectivity not found.
+        409:
+          description: |
+            Conflict - name or number already exists. 
+            Once assigned, name and number cannot be modified.
   '/members':
     post:
       summary: Create list of members
@@ -68,6 +102,8 @@ components:
       properties:
         location:
           type: string
+        specialty:
+          type: string
         members:
           type: array
           items:
@@ -88,6 +124,16 @@ components:
           $ref: '#/components/schemas/MemberIdentifier'
         secretary:
           $ref: '#/components/schemas/MemberIdentifier'
+    AssignCollectivity:
+      type: object
+      required:
+        - name
+        - number
+      properties:
+        name:
+          type: string
+        number:
+          type: string
     CollectivityStructure:
       type: object
       properties:
@@ -104,8 +150,18 @@ components:
       properties:
         id:
           type: string
+        name:
+          type: string
+        number:
+          type: string
         location:
           type: string
+        status:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - REJECTED
         structure:
           $ref: '#/components/schemas/CollectivityStructure'
         members:
@@ -124,11 +180,23 @@ components:
         referees:
           type: array
           items:
-            $ref: '#/components/schemas/MemberIdentifier'
+            $ref: '#/components/schemas/Sponsor'
         registrationFeePaid:
           type: boolean
         membershipDuesPaid:
           type: boolean
+    Sponsor:
+      type: object
+      properties:
+        memberId:
+          type: string
+        relationship:
+          type: string
+          enum:
+            - FAMILY
+            - FRIENDS
+            - COLLEAGUES
+            - OTHER
     MemberInformation:
       type: object
       properties:
