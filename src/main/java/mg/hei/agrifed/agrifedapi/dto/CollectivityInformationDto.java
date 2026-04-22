@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AssignCollectivityDto {
+public class CollectivityInformationDto {
     private String name;
     private String number;
 }

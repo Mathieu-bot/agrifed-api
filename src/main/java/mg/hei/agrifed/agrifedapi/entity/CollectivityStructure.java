@@ -14,7 +14,6 @@ public class CollectivityStructure {
     private Integer treasurerId;
     private Integer secretaryId;
     
-    // Embedded member references (populated from joins)
     private Member president;
     private Member vicePresident;
     private Member treasurer;
