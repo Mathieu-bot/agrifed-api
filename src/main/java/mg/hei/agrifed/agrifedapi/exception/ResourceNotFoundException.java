@@ -1,5 +1,8 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ResourceNotFoundException extends RuntimeException {
     
     private final String resourceType;
