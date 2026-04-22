@@ -9,6 +9,7 @@ import mg.hei.agrifed.agrifedapi.entity.Collectivity;
 import mg.hei.agrifed.agrifedapi.entity.CollectivityStructureEntity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
+import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
@@ -16,12 +17,17 @@ import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.CollectivityService;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CollectivityServiceImpl implements CollectivityService {
+
+    private static final int MIN_MEMBERS = 10;
+    private static final int MIN_SENIOR_MEMBERS = 5;
+    private static final int MIN_SENIORITY_MONTHS = 6;
 
     private final CollectivityRepository collectivityRepository;
     private final CollectivityStructureRepository structureRepository;
@@ -49,12 +55,42 @@ public class CollectivityServiceImpl implements CollectivityService {
                 throw new BadRequestException("Collectivity structure is required");
             }
 
+            if (dto.getLocation() == null || dto.getLocation().isBlank()) {
+                throw new BadRequestException("Location (city) is required");
+            }
+
+            if (dto.getSpecialty() == null || dto.getSpecialty().isBlank()) {
+                throw new BadRequestException("Agricultural specialty is required");
+            }
+
             List<String> memberIds = dto.getMembers();
+            if (memberIds == null || memberIds.size() < MIN_MEMBERS) {
+                throw new BusinessRuleViolationException(
+                    "Collectivity must have at least " + MIN_MEMBERS + " members",
+                    "COLLECTIVITY_MIN_MEMBERS",
+                    java.util.Map.of("required", MIN_MEMBERS, "provided", memberIds != null ? memberIds.size() : 0)
+                );
+            }
+
             List<Member> memberEntities = validateAndGetMembers(memberIds);
 
-            if (dto.getStructure() != null) {
-                validateStructureMembers(dto.getStructure(), memberEntities);
+            long seniorMembersCount = memberEntities.stream()
+                .filter(m -> m.getMembershipDate() != null)
+                .filter(m -> {
+                    long months = ChronoUnit.MONTHS.between(m.getMembershipDate(), LocalDate.now());
+                    return months >= MIN_SENIORITY_MONTHS;
+                })
+                .count();
+
+            if (seniorMembersCount < MIN_SENIOR_MEMBERS) {
+                throw new BusinessRuleViolationException(
+                    "Collectivity must have at least " + MIN_SENIOR_MEMBERS + " members with " + MIN_SENIORITY_MONTHS + "+ months seniority",
+                    "COLLECTIVITY_MIN_SENIOR_MEMBERS",
+                    java.util.Map.of("required", MIN_SENIOR_MEMBERS, "provided", seniorMembersCount, "minMonths", MIN_SENIORITY_MONTHS)
+                );
             }
+
+            validateStructureMembers(dto.getStructure(), memberEntities);
 
             String number = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             String name = "Collectivity " + number;
@@ -62,8 +98,8 @@ public class CollectivityServiceImpl implements CollectivityService {
             Collectivity entity = new Collectivity();
             entity.setNumber(number);
             entity.setName(name);
-            entity.setSpecialty("General");
-            entity.setCity("Unknown");
+            entity.setSpecialty(dto.getSpecialty());
+            entity.setCity(dto.getLocation());
             entity.setLocation(dto.getLocation());
             entity.setCreationDate(LocalDate.now());
             entity.setFederationId(1);
@@ -124,6 +160,19 @@ public class CollectivityServiceImpl implements CollectivityService {
         List<Integer> memberIds = members.stream()
                 .map(Member::getId)
                 .collect(Collectors.toList());
+
+        if (structure.getPresident() == null) {
+            throw new BadRequestException("President position must be filled");
+        }
+        if (structure.getVicePresident() == null) {
+            throw new BadRequestException("Vice President position must be filled");
+        }
+        if (structure.getTreasurer() == null) {
+            throw new BadRequestException("Treasurer position must be filled");
+        }
+        if (structure.getSecretary() == null) {
+            throw new BadRequestException("Secretary position must be filled");
+        }
 
         if (structure.getPresident() != null && !memberIds.contains(Integer.parseInt(structure.getPresident()))) {
             throw new NotFoundException("President member not found");

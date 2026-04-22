@@ -6,7 +6,6 @@
 -- ------------------------------------------------------------
 -- Add new columns to member table
 -- ------------------------------------------------------------
-ALTER TABLE member ADD COLUMN profession VARCHAR(100);
 ALTER TABLE member ADD COLUMN registration_fee_paid BOOLEAN DEFAULT FALSE;
 ALTER TABLE member ADD COLUMN membership_dues_paid BOOLEAN DEFAULT FALSE;
 

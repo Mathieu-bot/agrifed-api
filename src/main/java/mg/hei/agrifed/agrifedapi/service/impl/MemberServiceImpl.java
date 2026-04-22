@@ -3,10 +3,12 @@ package mg.hei.agrifed.agrifedapi.service.impl;
 import mg.hei.agrifed.agrifedapi.dto.CreateMemberDto;
 import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.dto.MemberDto;
+import mg.hei.agrifed.agrifedapi.dto.SponsorDto;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
 import mg.hei.agrifed.agrifedapi.entity.GenderEnum;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
+import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -18,6 +20,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MemberServiceImpl implements MemberService {
+
+    private static final int REGISTRATION_FEE = 50000;
+    private static final int DEFAULT_ANNUAL_DUES = 200000;
 
     private final MemberRepository memberRepository;
     private final CollectivityRepository collectivityRepository;
@@ -33,30 +38,38 @@ public class MemberServiceImpl implements MemberService {
 
         for (CreateMemberDto dto : createMembers) {
             if (dto.getRegistrationFeePaid() == null || !dto.getRegistrationFeePaid()) {
-                throw new BadRequestException("Registration fee not paid");
+                throw new BadRequestException("Registration fee of " + REGISTRATION_FEE + " Ar must be paid");
             }
             if (dto.getMembershipDuesPaid() == null || !dto.getMembershipDuesPaid()) {
-                throw new BadRequestException("Membership dues not paid");
+                throw new BadRequestException("Annual dues of " + DEFAULT_ANNUAL_DUES + " Ar must be paid");
             }
 
             if (dto.getReferees() == null || dto.getReferees().size() < 2) {
-                throw new BadRequestException("Member must have at least 2 referees");
+                throw new BadRequestException("Member must have at least 2 sponsors");
+            }
+
+            for (SponsorDto sponsor : dto.getReferees()) {
+                if (sponsor.getRelationship() == null || sponsor.getRelationship().isBlank()) {
+                    throw new BadRequestException("Relationship with sponsor " + sponsor.getMemberId() + " must be specified (famille/amis/collegues)");
+                }
             }
 
             if (dto.getCollectivityIdentifier() == null || dto.getCollectivityIdentifier().isBlank()) {
                 throw new BadRequestException("Collectivity identifier is required");
             }
 
-            Collectivity collectivity = collectivityRepository.findByNumber(dto.getCollectivityIdentifier())
+            Collectivity targetCollectivity = collectivityRepository.findByNumber(dto.getCollectivityIdentifier())
                     .orElseThrow(() -> new NotFoundException("Collectivity not found: " + dto.getCollectivityIdentifier()));
 
-            List<String> refereeIds = dto.getReferees();
-            List<Integer> refereeInts = parseMemberIds(refereeIds);
+            List<SponsorDto> sponsors = dto.getReferees();
+            List<Integer> sponsorIds = parseSponsorIds(sponsors);
 
-            List<Member> refereeEntities = memberRepository.findByIdIn(refereeInts);
-            if (refereeEntities.size() != refereeInts.size()) {
-                throw new NotFoundException("One or more referees not found");
+            List<Member> sponsorEntities = memberRepository.findByIdIn(sponsorIds);
+            if (sponsorEntities.size() != sponsorIds.size()) {
+                throw new NotFoundException("One or more sponsors not found");
             }
+
+            validateSponsorDistribution(sponsors, targetCollectivity);
 
             Member entity = new Member();
             entity.setFirstName(dto.getFirstName());
@@ -74,7 +87,7 @@ public class MemberServiceImpl implements MemberService {
             Member saved = memberRepository.save(entity);
 
             MemberDto response = mapToDto(saved);
-            response.setReferees(refereeEntities.stream()
+            response.setReferees(sponsorEntities.stream()
                     .map(this::mapToDto)
                     .collect(Collectors.toList()));
 
@@ -84,13 +97,62 @@ public class MemberServiceImpl implements MemberService {
         return createdMembers;
     }
 
-    private List<Integer> parseMemberIds(List<String> memberIds) {
-        return memberIds.stream()
-                .map(id -> {
+    private void validateSponsorDistribution(List<SponsorDto> sponsors, Collectivity targetCollectivity) {
+        int totalSponsors = sponsors.size();
+        
+        List<Member> allFederationMembers = memberRepository.findAll();
+        
+        int sponsorsFromCollectivity = 0;
+        int sponsorsFromOtherCollectivities = 0;
+        
+        for (SponsorDto sponsor : sponsors) {
+            Integer sponsorId = Integer.parseInt(sponsor.getMemberId());
+            
+            boolean isFromTargetCollectivity = false;
+            List<Member> membersInTarget = memberRepository.findByCollectivityId(targetCollectivity.getId());
+            for (Member m : membersInTarget) {
+                if (m.getId().equals(sponsorId)) {
+                    isFromTargetCollectivity = true;
+                    break;
+                }
+            }
+            
+            if (isFromTargetCollectivity) {
+                sponsorsFromCollectivity++;
+            } else {
+                sponsorsFromOtherCollectivities++;
+            }
+        }
+
+        if (sponsorsFromCollectivity < 1) {
+            throw new BusinessRuleViolationException(
+                "At least one sponsor must be from the target collectivity",
+                "SPONSOR_FROM_COLLECTIVITY_REQUIRED",
+                java.util.Map.of("fromTarget", sponsorsFromCollectivity, "fromOther", sponsorsFromOtherCollectivities)
+            );
+        }
+
+        int expectedFromCollectivity = totalSponsors - sponsorsFromOtherCollectivities;
+        if (sponsorsFromCollectivity != expectedFromCollectivity) {
+            throw new BusinessRuleViolationException(
+                "Sponsor distribution invalid: number from collectivity must equal number from other federation members",
+                "SPONSOR_DISTRIBUTION_INVALID",
+                java.util.Map.of(
+                    "fromCollectivity", sponsorsFromCollectivity,
+                    "fromOtherCollectivities", sponsorsFromOtherCollectivities,
+                    "total", totalSponsors
+                )
+            );
+        }
+    }
+
+    private List<Integer> parseSponsorIds(List<SponsorDto> sponsors) {
+        return sponsors.stream()
+                .map(sponsor -> {
                     try {
-                        return Integer.parseInt(id);
+                        return Integer.parseInt(sponsor.getMemberId());
                     } catch (NumberFormatException e) {
-                        throw new BadRequestException("Invalid member ID: " + id);
+                        throw new BadRequestException("Invalid sponsor ID: " + sponsor.getMemberId());
                     }
                 })
                 .collect(Collectors.toList());

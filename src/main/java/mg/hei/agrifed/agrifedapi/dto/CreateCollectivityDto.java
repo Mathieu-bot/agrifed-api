@@ -9,6 +9,7 @@ import java.util.List;
 @Setter
 public class CreateCollectivityDto {
     private String location;
+    private String specialty;
     private List<String> members;
     private Boolean federationApproval;
     private CreateCollectivityStructure structure;
