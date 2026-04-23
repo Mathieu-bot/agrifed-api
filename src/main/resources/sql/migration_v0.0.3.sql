@@ -7,9 +7,11 @@
 -- Table: membership_fee (NEW)
 -- Description: Fee structure defined by collectivity
 -- ------------------------------------------------------------
+DROP TABLE IF EXISTS membership_fee CASCADE;
+
 CREATE TABLE membership_fee (
     id SERIAL PRIMARY KEY,
-    eligible_from DATE NOT NULL,
+    eligible_from DATE,
     frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('weekly','monthly','annually','punctually')),
     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
     label VARCHAR(150),
@@ -35,7 +37,10 @@ ALTER TABLE contribution ADD CONSTRAINT contribution_payment_method_check CHECK 
 
 -- Fix CHECK type to add weekly, punctually
 ALTER TABLE contribution DROP CONSTRAINT IF EXISTS contribution_type_check;
-ALTER TABLE contribution ADD CONSTRAINT contribution_type_check CHECK (type IN ('admission', 'monthly', 'annual', 'one_time', 'weekly', 'punctually'));
+ALTER TABLE contribution ADD CONSTRAINT contribution_type_check CHECK (type IN ('admission', 'monthly', 'annually', 'one_time', 'weekly', 'punctually'));
+
+-- Allow eligible_from to be NULL in membership_fee
+ALTER TABLE membership_fee ALTER COLUMN eligible_from DROP NOT NULL;
 
 -- ------------------------------------------------------------
 -- Add columns to account_extended

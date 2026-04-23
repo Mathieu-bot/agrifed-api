@@ -57,10 +57,10 @@ CREATE TABLE member (
 -- ------------------------------------------------------------
 CREATE TABLE collectivity (
                               id SERIAL PRIMARY KEY,
-                              number VARCHAR(20) NOT NULL UNIQUE,
-                              name VARCHAR(150) NOT NULL UNIQUE,
-                              specialty VARCHAR(100) NOT NULL,
-                              city VARCHAR(100) NOT NULL,
+                              number VARCHAR(20) UNIQUE,
+                              name VARCHAR(150) UNIQUE,
+                              specialty VARCHAR(100),
+                              city VARCHAR(100),
                               creation_date DATE NOT NULL,
                               federation_id INTEGER NOT NULL,
                               status VARCHAR(20) DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
