@@ -1,7 +1,10 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
+import lombok.Getter;
+
+@Getter
 public class ResourceNotFoundException extends RuntimeException {
-    
+
     private final String resourceType;
     private final Integer resourceId;
 
@@ -11,11 +14,9 @@ public class ResourceNotFoundException extends RuntimeException {
         this.resourceId = resourceId;
     }
 
-    public String getResourceType() {
-        return resourceType;
-    }
-
-    public Integer getResourceId() {
-        return resourceId;
+    public ResourceNotFoundException(String message) {
+        super(message);
+        this.resourceType = null;
+        this.resourceId = null;
     }
 }

@@ -1,5 +1,8 @@
 package mg.hei.agrifed.agrifedapi.exception;
 
+/**
+ * Exception levée lorsqu'il y a un conflit avec l'état actuel des données
+ */
 public class ConflictException extends RuntimeException {
     
     public ConflictException(String message) {

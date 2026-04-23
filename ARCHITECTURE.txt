@@ -1,0 +1,118 @@
+ARCHITECTURE EXPLANATION - Agrifed-API
+=======================================
+
+1. DATASOURCE CONFIGURATION
+----------------------------
+The application uses a custom DataSourceConfig class with a static inner class
+for database connections. This replaces standard Spring DataSource auto-configuration.
+
+Key components:
+- DataSourceConfig: Spring @Configuration class that defines a @Bean
+- DataSource (inner class): Provides getConnection() method
+- Uses io.github.cdimascio.dotenv.Dotenv for environment variable loading
+- No connection pooling - direct DriverManager.getConnection()
+- PostgreSQL driver loaded manually via Class.forName()
+
+Environment variables required:
+- JDBC_URL: PostgreSQL connection URL
+- USERNAME: Database username
+- PASSWORD: Database password
+
+
+2. PERSISTENCE LAYER (Manual JDBC)
+----------------------------------
+All repository implementations use pure JDBC with:
+- Explicit column names in SQL (no SELECT *)
+- PreparedStatement for all queries
+- Try-with-resources for proper resource management
+- Constructor injection of DataSource
+
+Files:
+- JdbcCollectivityRepositoryImpl: Collectivity CRUD operations
+- JdbcMemberRepositoryImpl: Member CRUD operations
+- JdbcCollectivityStructureRepositoryImpl: Structure CRUD operations
+
+
+3. INTERFACE-DRIVEN DESIGN
+--------------------------
+All repositories and services follow the interface/implementation pattern:
+
+Repository Interfaces:
+- CollectivityRepository
+- MemberRepository
+- CollectivityStructureRepository
+
+Service Interfaces:
+- CollectivityService
+- MemberService
+
+Implementations in impl/ subpackages:
+
+
+4. DEPENDENCY INJECTION
+------------------------
+Constructor injection is used throughout - no @Autowired annotations.
+Spring @Configuration classes:
+- RepositoryConfig: Provides repository beans
+- ServiceConfig: Provides service beans
+
+
+5. EXCEPTION HANDLING
+---------------------
+GlobalExceptionHandler with @RestControllerAdvice handles:
+- SQLException: Database errors
+- DatabaseException: Custom DB errors
+- BadRequestException: Validation errors
+- NotFoundException/ResourceNotFoundException: 404 errors
+- BusinessRuleViolationException: Business logic errors
+
+
+6. COLLECTIVITY TABLE - FEDERATION ASSIGNMENT
+---------------------------------------------
+Two-step workflow:
+
+1. POST /collectivities - Create collectivity request
+   - name and number are NOT provided in request body
+   - federationApproval field REMOVED (not required)
+   - Status automatically set to "pending"
+   - Returns 201 with created collectivity
+
+2. PUT /collectivities/{id}/informations - Federation approval
+   - Federation assigns name and number
+   - Status changes: pending → approved
+   - Approval can take days/weeks - no automatic timeout
+   - 400 if collectivity is not in "pending" status
+   - 409 if name/number already exists
+
+
+7. BUILD & RUN
+--------------
+Build: ./gradlew build
+Run: java -jar build/libs/agrifed-api-0.0.2.jar
+Environment: Set JDBC_URL, USERNAME, PASSWORD before running
+
+
+8. API VERSIONS
+--------------
+- v0.0.1 (2026-04-21): Initial release
+  - POST /collectivities: Create list of collectivities
+  - POST /members: Create list of members
+
+- v0.0.2 (2026-04-22): Federation approval workflow
+  - PUT /collectivities/{id}/informations: Assign name and number by federation
+  - Removed federationApproval field from collectivity creation
+
+
+9. ENUM CONVENTIONS
+------------------
+All enums use UPPERCASE format:
+- OpenAPI YAML: MALE, FEMALE, JUNIOR, SENIOR, etc. (UPPERCASE)
+- Java: MALE, FEMALE, JUNIOR, SENIOR, etc. (UPPERCASE)
+- Gender: MALE, FEMALE
+- MemberOccupation: JUNIOR, SENIOR, SECRETARY, TREASURER, VICE_PRESIDENT, PRESIDENT
+- SponsorRelationship: FAMILY, FRIENDS, COLLEAGUES, OTHER
+- CollectivityStatus: PENDING, APPROVED, REJECTED
+
+Database stores enums in lowercase with automatic conversion:
+- Java (UPPERCASE) → Database (lowercase) on write
+- Database (lowercase) → Java (UPPERCASE) on read

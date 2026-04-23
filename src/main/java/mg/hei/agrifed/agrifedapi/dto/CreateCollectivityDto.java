@@ -11,6 +11,6 @@ public class CreateCollectivityDto {
     private String location;
     private String specialty;
     private List<String> members;
-    private CreateCollectivityStructure structure;
     private Boolean federationApproval;
+    private CreateCollectivityStructure structure;
 }

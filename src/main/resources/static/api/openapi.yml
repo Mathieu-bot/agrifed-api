@@ -294,7 +294,7 @@ components:
         profession:
           type: string
         phoneNumber:
-          type: string
+          type: int
         email:
           type: string
         occupation:

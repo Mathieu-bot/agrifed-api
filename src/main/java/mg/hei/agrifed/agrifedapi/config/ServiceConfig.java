@@ -1,12 +1,8 @@
 package mg.hei.agrifed.agrifedapi.config;
 
-import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
-import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
-import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
-import mg.hei.agrifed.agrifedapi.service.CollectivityService;
-import mg.hei.agrifed.agrifedapi.service.MemberService;
-import mg.hei.agrifed.agrifedapi.service.impl.CollectivityServiceImpl;
-import mg.hei.agrifed.agrifedapi.service.impl.MemberServiceImpl;
+import mg.hei.agrifed.agrifedapi.repository.*;
+import mg.hei.agrifed.agrifedapi.service.*;
+import mg.hei.agrifed.agrifedapi.service.impl.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -26,5 +22,34 @@ public class ServiceConfig {
             MemberRepository memberRepository,
             CollectivityRepository collectivityRepository) {
         return new MemberServiceImpl(memberRepository, collectivityRepository);
+    }
+
+    @Bean
+    public MembershipFeeService membershipFeeService(
+            MembershipFeeRepository feeRepository,
+            CollectivityRepository collectivityRepository) {
+        return new MembershipFeeServiceImpl(feeRepository, collectivityRepository);
+    }
+
+    @Bean
+    public CollectivityTransactionService collectivityTransactionService(
+            TransactionRepository transactionRepository,
+            CollectivityRepository collectivityRepository,
+            AccountRepository accountRepository,
+            MemberRepository memberRepository) {
+        return new CollectivityTransactionServiceImpl(
+                transactionRepository, collectivityRepository, accountRepository, memberRepository);
+    }
+
+    @Bean
+    public MemberPaymentService memberPaymentService(
+            MemberPaymentRepository paymentRepository,
+            MemberRepository memberRepository,
+            MembershipFeeRepository feeRepository,
+            AccountRepository accountRepository,
+            TransactionRepository transactionRepository){
+        return new MemberPaymentServiceImpl(
+                paymentRepository, memberRepository, feeRepository, accountRepository, transactionRepository
+        );
     }
 }
