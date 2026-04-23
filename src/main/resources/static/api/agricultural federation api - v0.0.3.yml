@@ -244,7 +244,7 @@ components:
         name:
           type: string
         number:
-          type: string
+          type: int
     Collectivity:
       type: object
       allOf:
@@ -432,7 +432,7 @@ components:
         - BOA
         - BGFI
         - AFG
-        - ACCES_BANQUE
+        - ACCES_BAQUE
         - BAOBAB
         - SIPEM
     Gender:
