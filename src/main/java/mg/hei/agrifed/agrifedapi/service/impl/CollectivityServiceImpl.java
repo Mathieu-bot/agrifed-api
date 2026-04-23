@@ -242,8 +242,8 @@ public class CollectivityServiceImpl implements CollectivityService {
     private CollectivityDto mapToDto(Collectivity entity) {
         CollectivityDto dto = new CollectivityDto();
         dto.setId(String.valueOf(entity.getId()));
-        dto.setName(entity.getName());
         dto.setNumber(entity.getNumber());
+        dto.setName(entity.getName());
         dto.setLocation(entity.getLocation());
         dto.setStatus(entity.getStatus());
         return dto;
@@ -282,6 +282,48 @@ public class CollectivityServiceImpl implements CollectivityService {
         dto.setProfession(entity.getOccupation());
         dto.setPhoneNumber(entity.getPhone());
         dto.setEmail(entity.getEmail());
+        return dto;
+    }
+
+    @Override
+    public CollectivityDto getById(Integer id) {
+        Collectivity collectivity = collectivityRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
+
+        CollectivityDto dto = mapToDto(collectivity);
+
+        structureRepository.findByCollectivityId(id).ifPresent(structureEntity -> {
+            CollectivityStructure structure = new CollectivityStructure();
+
+            if (structureEntity.getPresidentId() != null) {
+                memberRepository.findById(structureEntity.getPresidentId())
+                        .ifPresent(m -> structure.setPresident(mapMemberToDto(m)));
+            }
+            if (structureEntity.getVicePresidentId() != null) {
+                memberRepository.findById(structureEntity.getVicePresidentId())
+                        .ifPresent(m -> structure.setVicePresident(mapMemberToDto(m)));
+            }
+            if (structureEntity.getTreasurerId() != null) {
+                memberRepository.findById(structureEntity.getTreasurerId())
+                        .ifPresent(m -> structure.setTreasurer(mapMemberToDto(m)));
+            }
+            if (structureEntity.getSecretaryId() != null) {
+                memberRepository.findById(structureEntity.getSecretaryId())
+                        .ifPresent(m -> structure.setSecretary(mapMemberToDto(m)));
+            }
+
+            dto.setStructure(structure);
+        });
+
+        List<Member> members = memberRepository.findByCollectivityId(id);
+        dto.setMembers(members.stream()
+                .map(this::mapMemberToDto)
+                .collect(Collectors.toList()));
+
+        dto.setNumber(collectivity.getNumber());
+        dto.setName(collectivity.getName());
+        dto.setStatus(collectivity.getStatus());
+
         return dto;
     }
 }

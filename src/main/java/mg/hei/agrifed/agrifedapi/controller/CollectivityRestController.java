@@ -7,12 +7,7 @@ import mg.hei.agrifed.agrifedapi.service.CollectivityService;
 import mg.hei.agrifed.agrifedapi.validator.EmptyArrayValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -40,5 +35,10 @@ public class CollectivityRestController {
             @RequestBody CollectivityInformationDto dto) {
         CollectivityDto updated = collectivityService.assignNameAndNumber(id, dto);
         return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CollectivityDto> getCollectivity(@PathVariable Integer id) {
+        return ResponseEntity.ok(collectivityService.getById(id));
     }
 }
