@@ -94,7 +94,7 @@ public class CollectivityServiceImpl implements CollectivityService {
             entity.setLocation(dto.getLocation());
             entity.setCreationDate(LocalDate.now());
             entity.setFederationId(1);
-            entity.setStatus("pending");
+            entity.setStatus("PENDING");
 
             Collectivity saved = collectivityRepository.save(entity);
 
@@ -140,7 +140,7 @@ public class CollectivityServiceImpl implements CollectivityService {
         Collectivity existing = collectivityRepository.findById(collectivityId)
                 .orElseThrow(() -> new ResourceNotFoundException("Collectivity", collectivityId));
 
-        if (!"pending".equals(existing.getStatus())) {
+        if (!"PENDING".equals(existing.getStatus())) {
             throw new BadRequestException("Collectivity already has name and number assigned - cannot be modified");
         }
 
@@ -156,7 +156,7 @@ public class CollectivityServiceImpl implements CollectivityService {
 
         existing.setName(dto.getName());
         existing.setNumber(dto.getNumber());
-        existing.setStatus("approved");
+        existing.setStatus("APPROVED");
 
         Collectivity updated = collectivityRepository.update(existing);
         return mapToDto(updated);

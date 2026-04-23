@@ -3,11 +3,12 @@ info:
   title: Agricultural federation API
   description: |
     # Versioning
-    This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are : 
+    This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are :
     - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
     - v0.0.2 (2026-04-22) : PUT /collectivities/{id}/informations for collectivity information update.
     - v0.0.3 (2026-04-23) : New features about membership fees, collectivities transactions and its financial accounts, and members payments.
-  version: 0.0.1
+    - v0.0.4 (2026-04-23) : GET /collectivities/{id}/financialAccounts for retrieving collectivity accounts with balance.
+  version: 0.0.4
 servers:
   - url: 'https://localhost:8080'
 paths:
@@ -144,6 +145,37 @@ paths:
                   $ref: '#/components/schemas/CollectivityTransaction'
         400:
           description: Provided query parameters occur some exceptions.
+        404:
+          description: Collectivity not found.
+  '/collectivities/{id}/financialAccounts':
+    get:
+      summary: Retrieve financial accounts of a collectivity with balance
+      description: |
+        Returns the list of financial accounts (cash, mobile banking, bank) belonging to a collectivity.
+        The optional `at` query parameter allows retrieving the account balance at a specific date.
+        If `at` is not provided, returns the current balance.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+        - in: query
+          name: at
+          schema:
+            type: string
+            format: date
+          required: false
+          description: Date at which to retrieve the account balance
+      responses:
+        200:
+          description: List of financial accounts for the specific collectivity
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinancialAccount'
         404:
           description: Collectivity not found.
   '/members':

@@ -38,4 +38,9 @@ public class RepositoryConfig {
     public TransactionRepository transactionRepository(DataSource dataSource){
         return new JdbcTransactionRepositoryImpl(dataSource);
     }
+
+    @Bean
+    public ContributionRepository contributionRepository(DataSource dataSource) {
+        return new JdbcContributionRepositoryImpl(dataSource);
+    }
 }

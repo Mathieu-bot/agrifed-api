@@ -42,7 +42,7 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
                 "VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setDate(1, Date.valueOf(fee.getEligibleFrom()));
+            stmt.setDate(1, fee.getEligibleFrom() != null ? Date.valueOf(fee.getEligibleFrom()) : null);
             stmt.setString(2, fee.getFrequency());
             stmt.setBigDecimal(3, fee.getAmount());
             stmt.setString(4, fee.getLabel());
@@ -88,7 +88,8 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
     private MembershipFee mapRow(ResultSet rs) throws SQLException {
         MembershipFee f = new MembershipFee();
         f.setId(rs.getInt("id"));
-        f.setEligibleFrom(rs.getDate("eligible_from").toLocalDate());
+        Date eligibleDate = rs.getDate("eligible_from");
+        f.setEligibleFrom(eligibleDate != null ? eligibleDate.toLocalDate() : null);
         f.setFrequency(rs.getString("frequency"));
         f.setAmount(rs.getBigDecimal("amount"));
         f.setLabel(rs.getString("label"));

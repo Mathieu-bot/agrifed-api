@@ -8,6 +8,8 @@ import mg.hei.agrifed.agrifedapi.repository.AccountRepository;
 
 import java.math.BigDecimal;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -18,11 +20,10 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
     @Override
     public Optional<AccountFull> findById(Integer id) {
         String sql = """
-            SELECT a.id, a.type, a.collectivity_id, a.federation_id,
+            SELECT a.id, a.type, a.collectivity_id, a.federation_id, a.balance,
                    ae.holder_name   AS bank_holder,  ae.bank_name, ae.account_number, ae.rib_key,
                    ae.bank_code, ae.branch_code,
-                   am.holder_name   AS mob_holder,   am.service_name,  am.phone_number,
-                   COALESCE((SELECT SUM(t.amount) FROM "transaction" t WHERE t.account_id = a.id), 0) AS balance
+                   am.holder_name   AS mob_holder,   am.service_name,  am.phone_number
             FROM account a
             LEFT JOIN account_extended ae ON ae.account_id = a.id
             LEFT JOIN account_mobile   am ON am.account_id = a.id
@@ -40,7 +41,43 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
     }
 
     @Override
-    public void updateBalance(Integer accountId, BigDecimal delta) {}
+    public List<AccountFull> findByCollectivityId(Integer collectivityId) {
+        String sql = """
+            SELECT a.id, a.type, a.collectivity_id, a.federation_id, a.balance,
+                   ae.holder_name   AS bank_holder,  ae.bank_name, ae.account_number, ae.rib_key,
+                   ae.bank_code, ae.branch_code,
+                   am.holder_name   AS mob_holder,   am.service_name,  am.phone_number
+            FROM account a
+            LEFT JOIN account_extended ae ON ae.account_id = a.id
+            LEFT JOIN account_mobile   am ON am.account_id = a.id
+            WHERE a.collectivity_id = ?
+            """;
+        List<AccountFull> accounts = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                accounts.add(mapRow(rs));
+            }
+            return accounts;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find accounts by collectivity id", e);
+        }
+    }
+
+    @Override
+    public void updateBalance(Integer accountId, BigDecimal delta) {
+        String sql = "UPDATE account SET balance = balance + ? WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setBigDecimal(1, delta);
+            stmt.setInt(2, accountId);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to update account balance", e);
+        }
+    }
 
     private AccountFull mapRow(ResultSet rs) throws SQLException {
         AccountFull a = new AccountFull();
@@ -48,7 +85,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
         a.setType(rs.getString("type"));
         a.setCollectivityId(rs.getObject("collectivity_id") != null ? rs.getInt("collectivity_id") : null);
         a.setFederationId(rs.getObject("federation_id") != null ? rs.getInt("federation_id") : null);
-        a.setBalance(rs.getBigDecimal("balance"));
+        a.setBalance(rs.getBigDecimal("balance") != null ? rs.getBigDecimal("balance") : BigDecimal.ZERO);
 
         String type = rs.getString("type");
         if ("bank".equals(type)) {

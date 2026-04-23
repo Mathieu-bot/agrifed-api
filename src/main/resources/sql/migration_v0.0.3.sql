@@ -12,10 +12,10 @@ DROP TABLE IF EXISTS membership_fee CASCADE;
 CREATE TABLE membership_fee (
     id SERIAL PRIMARY KEY,
     eligible_from DATE,
-    frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('weekly','monthly','annually','punctually')),
+    frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('WEEKLY','MONTHLY','ANNUALLY','PUNCTUALLY')),
     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
     label VARCHAR(150),
-    status VARCHAR(10) NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
     collectivity_id INTEGER NOT NULL,
     CONSTRAINT membership_fee_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE
 );
@@ -31,13 +31,13 @@ ALTER TABLE contribution ADD COLUMN label VARCHAR(150);
 ALTER TABLE contribution ADD CONSTRAINT contribution_membership_fee_FK FOREIGN KEY (membership_fee_id) REFERENCES membership_fee(id) ON DELETE SET NULL;
 ALTER TABLE contribution ADD CONSTRAINT contribution_account_FK FOREIGN KEY (account_credited_id) REFERENCES account(id) ON DELETE SET NULL;
 
--- Fix CHECK payment_method to lowercase
+-- Update CHECK payment_method to uppercase
 ALTER TABLE contribution DROP CONSTRAINT IF EXISTS contribution_payment_method_check;
-ALTER TABLE contribution ADD CONSTRAINT contribution_payment_method_check CHECK (payment_method IN ('cash', 'bank_transfer', 'mobile_banking'));
+ALTER TABLE contribution ADD CONSTRAINT contribution_payment_method_check CHECK (payment_method IN ('CASH', 'BANK_TRANSFER', 'MOBILE_BANKING'));
 
--- Fix CHECK type to add weekly, punctually
+-- Update CHECK type to uppercase
 ALTER TABLE contribution DROP CONSTRAINT IF EXISTS contribution_type_check;
-ALTER TABLE contribution ADD CONSTRAINT contribution_type_check CHECK (type IN ('admission', 'monthly', 'annually', 'one_time', 'weekly', 'punctually'));
+ALTER TABLE contribution ADD CONSTRAINT contribution_type_check CHECK (type IN ('ADMISSION', 'MONTHLY', 'ANNUALLY', 'ONE_TIME', 'WEEKLY', 'PUNCTUALLY'));
 
 -- Allow eligible_from to be NULL in membership_fee
 ALTER TABLE membership_fee ALTER COLUMN eligible_from DROP NOT NULL;
