@@ -19,6 +19,9 @@ ALTER TABLE collectivity ADD COLUMN federation_approval BOOLEAN DEFAULT FALSE;
 -- Create collectivity_structure table
 -- Description: Bureau of a collectivity (president, vice-president, treasurer, secretary)
 -- ------------------------------------------------------------
+DROP TABLE IF EXISTS collectivity_structure CASCADE;
+
+
 CREATE TABLE collectivity_structure (
     id SERIAL PRIMARY KEY,
     collectivity_id INTEGER NOT NULL,

@@ -9,7 +9,7 @@ import java.util.List;
 @Setter
 public class CreateMemberDto extends MemberInformationDto {
     private String collectivityIdentifier;
-    private List<SponsorDto> referees;
+    private List<String> referees;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
 }

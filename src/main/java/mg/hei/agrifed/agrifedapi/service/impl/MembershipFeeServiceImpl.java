@@ -7,6 +7,7 @@ import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MembershipFeeRepository;
 import mg.hei.agrifed.agrifedapi.service.MembershipFeeService;
+import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -51,10 +52,10 @@ public class MembershipFeeServiceImpl implements MembershipFeeService {
             MembershipFee fee = new MembershipFee();
             fee.setEligibleFrom(dto.getEligibleFrom() != null
                     ? LocalDate.parse(dto.getEligibleFrom()) : LocalDate.now());
-            fee.setFrequency(dto.getFrequency().name());
+            fee.setFrequency(EnumConverter.toDb(dto.getFrequency()));
             fee.setAmount(dto.getAmount());
             fee.setLabel(dto.getLabel());
-            fee.setStatus("ACTIVE");
+            fee.setStatus(EnumConverter.toDb(ActivityStatus.ACTIVE));
             fee.setCollectivityId(collectivityId);
 
             MembershipFee saved = feeRepository.save(fee);
@@ -67,10 +68,10 @@ public class MembershipFeeServiceImpl implements MembershipFeeService {
         MembershipFeeDto dto = new MembershipFeeDto();
         dto.setId(String.valueOf(f.getId()));
         dto.setEligibleFrom(f.getEligibleFrom() != null ? f.getEligibleFrom().toString() : null);
-        dto.setFrequency(Frequency.valueOf(f.getFrequency()));
+        dto.setFrequency(EnumConverter.fromDb(f.getFrequency(), Frequency.class));
         dto.setAmount(f.getAmount());
         dto.setLabel(f.getLabel());
-        dto.setStatus(ActivityStatus.valueOf(f.getStatus()));
+        dto.setStatus(EnumConverter.fromDb(f.getStatus(), ActivityStatus.class));
         return dto;
     }
 }

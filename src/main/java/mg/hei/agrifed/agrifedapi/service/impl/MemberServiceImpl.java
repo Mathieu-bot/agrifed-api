@@ -3,8 +3,6 @@ package mg.hei.agrifed.agrifedapi.service.impl;
 import mg.hei.agrifed.agrifedapi.dto.CreateMemberDto;
 import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.dto.MemberDto;
-import mg.hei.agrifed.agrifedapi.dto.MemberOccupation;
-import mg.hei.agrifed.agrifedapi.dto.SponsorDto;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
@@ -49,12 +47,6 @@ public class MemberServiceImpl implements MemberService {
                 throw new BadRequestException("Member must have at least 2 sponsors");
             }
 
-            for (SponsorDto sponsor : dto.getReferees()) {
-                if (sponsor.getRelationship() == null || sponsor.getRelationship().isBlank()) {
-                    throw new BadRequestException("Relationship with sponsor " + sponsor.getMemberId() + " must be specified (famille/amis/collegues)");
-                }
-            }
-
             if (dto.getCollectivityIdentifier() == null || dto.getCollectivityIdentifier().isBlank()) {
                 throw new BadRequestException("Collectivity identifier is required");
             }
@@ -62,15 +54,15 @@ public class MemberServiceImpl implements MemberService {
             Collectivity targetCollectivity = collectivityRepository.findByNumber(dto.getCollectivityIdentifier())
                     .orElseThrow(() -> new NotFoundException("Collectivity not found: " + dto.getCollectivityIdentifier()));
 
-            List<SponsorDto> sponsors = dto.getReferees();
-            List<Integer> sponsorIds = parseSponsorIds(sponsors);
+            List<String> refereeIds = dto.getReferees();
+            List<Integer> sponsorIds = parseRefereeIds(refereeIds);
 
             List<Member> sponsorEntities = memberRepository.findByIdIn(sponsorIds);
             if (sponsorEntities.size() != sponsorIds.size()) {
                 throw new NotFoundException("One or more sponsors not found");
             }
 
-            validateSponsorDistribution(sponsors, targetCollectivity);
+            validateSponsorDistribution(refereeIds, targetCollectivity);
 
             Member entity = new Member();
             entity.setFirstName(dto.getFirstName());
@@ -98,16 +90,16 @@ public class MemberServiceImpl implements MemberService {
         return createdMembers;
     }
 
-    private void validateSponsorDistribution(List<SponsorDto> sponsors, Collectivity targetCollectivity) {
-        int totalSponsors = sponsors.size();
+    private void validateSponsorDistribution(List<String> refereeIds, Collectivity targetCollectivity) {
+        int totalSponsors = refereeIds.size();
         
         List<Member> allFederationMembers = memberRepository.findAll();
         
         int sponsorsFromCollectivity = 0;
         int sponsorsFromOtherCollectivities = 0;
         
-        for (SponsorDto sponsor : sponsors) {
-            Integer sponsorId = Integer.parseInt(sponsor.getMemberId());
+        for (String refereeId : refereeIds) {
+            Integer sponsorId = Integer.parseInt(refereeId);
             
             boolean isFromTargetCollectivity = false;
             List<Member> membersInTarget = memberRepository.findByCollectivityId(targetCollectivity.getId());
@@ -147,13 +139,13 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
-    private List<Integer> parseSponsorIds(List<SponsorDto> sponsors) {
-        return sponsors.stream()
-                .map(sponsor -> {
+    private List<Integer> parseRefereeIds(List<String> refereeIds) {
+        return refereeIds.stream()
+                .map(id -> {
                     try {
-                        return Integer.parseInt(sponsor.getMemberId());
+                        return Integer.parseInt(id);
                     } catch (NumberFormatException e) {
-                        throw new BadRequestException("Invalid sponsor ID: " + sponsor.getMemberId());
+                        throw new BadRequestException("Invalid referee ID: " + id);
                     }
                 })
                 .collect(Collectors.toList());
