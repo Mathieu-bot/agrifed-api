@@ -20,6 +20,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
         String sql = """
             SELECT a.id, a.type, a.collectivity_id, a.federation_id,
                    ae.holder_name   AS bank_holder,  ae.bank_name, ae.account_number, ae.rib_key,
+                   ae.bank_code, ae.branch_code,
                    am.holder_name   AS mob_holder,   am.service_name,  am.phone_number,
                    COALESCE((SELECT SUM(t.amount) FROM "transaction" t WHERE t.account_id = a.id), 0) AS balance
             FROM account a
@@ -53,6 +54,8 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
         if ("bank".equals(type)) {
             a.setHolderName(rs.getString("bank_holder"));
             a.setBankName(rs.getString("bank_name"));
+            a.setBankCode(rs.getString("bank_code"));
+            a.setBankBranchCode(rs.getString("branch_code"));
             a.setAccountNumber(rs.getString("account_number"));
             a.setRibKey(rs.getString("rib_key"));
         } else if ("mobile_money".equals(type)) {

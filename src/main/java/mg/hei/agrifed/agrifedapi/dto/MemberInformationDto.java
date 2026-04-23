@@ -12,7 +12,7 @@ public class MemberInformationDto {
     private Gender gender;
     private String address;
     private String profession;
-    private int phoneNumber;
+    private String phoneNumber;
     private String email;
     private MemberOccupation occupation;
 }

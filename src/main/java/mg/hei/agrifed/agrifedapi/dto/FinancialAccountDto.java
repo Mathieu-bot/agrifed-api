@@ -18,9 +18,9 @@ public class FinancialAccountDto {
     private String type;
     private BigDecimal amount;
     private String holderName;
-    private String mobileBankingService;
+    private MobileBankingService mobileBankingService;
     private String mobileNumber;
-    private String bankName;
+    private Bank bankName;
     private String bankCode;
     private String bankBranchCode;
     private String bankAccountNumber;

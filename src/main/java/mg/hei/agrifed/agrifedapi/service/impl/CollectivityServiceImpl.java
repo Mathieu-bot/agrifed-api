@@ -1,5 +1,6 @@
 package mg.hei.agrifed.agrifedapi.service.impl;
 
+import mg.hei.agrifed.agrifedapi.dto.CollectivityInformationDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityStructure;
 import mg.hei.agrifed.agrifedapi.dto.CreateCollectivityDto;
@@ -8,9 +9,7 @@ import mg.hei.agrifed.agrifedapi.dto.MemberDto;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
 import mg.hei.agrifed.agrifedapi.entity.CollectivityStructureEntity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
-import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
-import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
-import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
+import mg.hei.agrifed.agrifedapi.exception.*;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityStructureRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -20,7 +19,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CollectivityServiceImpl implements CollectivityService {
@@ -47,8 +45,8 @@ public class CollectivityServiceImpl implements CollectivityService {
         List<CollectivityDto> createdCollectivities = new ArrayList<>();
 
         for (CreateCollectivityDto dto : createCollectivities) {
-            if (dto.getFederationApproval() == null || !dto.getFederationApproval()) {
-                throw new BadRequestException("Collectivity requires federation approval");
+            if (dto.getFederationApproval() != null && dto.getFederationApproval()) {
+                throw new BadRequestException("federationApproval must be false or omitted during creation");
             }
 
             if (dto.getStructure() == null) {
@@ -92,19 +90,15 @@ public class CollectivityServiceImpl implements CollectivityService {
 
             validateStructureMembers(dto.getStructure(), memberEntities);
 
-            String number = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            String name = "Collectivity " + number;
-
             Collectivity entity = new Collectivity();
-            entity.setNumber(number);
-            entity.setName(name);
+            entity.setNumber(null);
+            entity.setName(null);
             entity.setSpecialty(dto.getSpecialty());
             entity.setCity(dto.getLocation());
             entity.setLocation(dto.getLocation());
             entity.setCreationDate(LocalDate.now());
             entity.setFederationId(1);
             entity.setStatus("pending");
-            entity.setFederationApproval(dto.getFederationApproval());
 
             Collectivity saved = collectivityRepository.save(entity);
 
@@ -115,11 +109,11 @@ public class CollectivityServiceImpl implements CollectivityService {
             CollectivityDto response = mapToDto(saved);
 
             if (dto.getStructure() != null) {
-                CollectivityStructure structure = mapStructure(dto.getStructure());
+                CollectivityStructure structure = mapStructureFromEntity(saved.getId(), dto.getStructure());
                 response.setStructure(structure);
             }
 
-            if (memberIds != null && !memberIds.isEmpty()) {
+            if (!memberIds.isEmpty()) {
                 response.setMembers(memberEntities.stream()
                         .map(this::mapMemberToDto)
                         .collect(Collectors.toList()));
@@ -129,6 +123,47 @@ public class CollectivityServiceImpl implements CollectivityService {
         }
 
         return createdCollectivities;
+    }
+
+    @Override
+    public CollectivityDto assignNameAndNumber(String id, CollectivityInformationDto dto) {
+        if (dto.getName() == null || dto.getName().isBlank()) {
+            throw new BadRequestException("Name is required");
+        }
+        if (dto.getNumber() == null || dto.getNumber().isBlank()) {
+            throw new BadRequestException("Number is required");
+        }
+
+        Integer collectivityId;
+        try {
+            collectivityId = Integer.parseInt(id);
+        } catch (NumberFormatException e) {
+            throw new BadRequestException("Invalid collectivity ID: " + id);
+        }
+
+        Collectivity existing = collectivityRepository.findById(collectivityId)
+                .orElseThrow(() -> new ResourceNotFoundException("Collectivity", collectivityId));
+
+        if (!"pending".equals(existing.getStatus())) {
+            throw new BadRequestException("Collectivity already has name and number assigned - cannot be modified");
+        }
+
+        boolean nameExists = collectivityRepository.findByName(dto.getName()).isPresent();
+        if (nameExists) {
+            throw new ConflictException("Collectivity name already exists: " + dto.getName());
+        }
+
+        boolean numberExists = collectivityRepository.findByNumber(dto.getNumber()).isPresent();
+        if (numberExists) {
+            throw new ConflictException("Collectivity number already exists: " + dto.getNumber());
+        }
+
+        existing.setName(dto.getName());
+        existing.setNumber(dto.getNumber());
+        existing.setStatus("approved");
+
+        Collectivity updated = collectivityRepository.update(existing);
+        return mapToDto(updated);
     }
 
     private List<Member> validateAndGetMembers(List<String> memberIds) {
@@ -159,7 +194,7 @@ public class CollectivityServiceImpl implements CollectivityService {
 
         List<Integer> memberIds = members.stream()
                 .map(Member::getId)
-                .collect(Collectors.toList());
+                .toList();
 
         if (structure.getPresident() == null) {
             throw new BadRequestException("President position must be filled");
@@ -174,16 +209,16 @@ public class CollectivityServiceImpl implements CollectivityService {
             throw new BadRequestException("Secretary position must be filled");
         }
 
-        if (structure.getPresident() != null && !memberIds.contains(Integer.parseInt(structure.getPresident()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getPresident()))) {
             throw new NotFoundException("President member not found");
         }
-        if (structure.getVicePresident() != null && !memberIds.contains(Integer.parseInt(structure.getVicePresident()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getVicePresident()))) {
             throw new NotFoundException("Vice president member not found");
         }
-        if (structure.getTreasurer() != null && !memberIds.contains(Integer.parseInt(structure.getTreasurer()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getTreasurer()))) {
             throw new NotFoundException("Treasurer member not found");
         }
-        if (structure.getSecretary() != null && !memberIds.contains(Integer.parseInt(structure.getSecretary()))) {
+        if (!memberIds.contains(Integer.parseInt(structure.getSecretary()))) {
             throw new NotFoundException("Secretary member not found");
         }
     }
@@ -211,11 +246,14 @@ public class CollectivityServiceImpl implements CollectivityService {
     private CollectivityDto mapToDto(Collectivity entity) {
         CollectivityDto dto = new CollectivityDto();
         dto.setId(String.valueOf(entity.getId()));
+        dto.setName(entity.getName());
+        dto.setNumber(entity.getNumber());
         dto.setLocation(entity.getLocation());
+        dto.setStatus(entity.getStatus());
         return dto;
     }
 
-    private CollectivityStructure mapStructure(CreateCollectivityStructure createStructure) {
+    private CollectivityStructure mapStructureFromEntity(Integer collectivityId, CreateCollectivityStructure createStructure) {
         CollectivityStructure structure = new CollectivityStructure();
 
         if (createStructure.getPresident() != null) {

@@ -20,6 +20,8 @@ public class AccountFull {
 
     private String holderName;
     private String bankName;
+    private String bankCode;
+    private String bankBranchCode;
     private String accountNumber;
     private String ribKey;
 

@@ -3,9 +3,9 @@ package mg.hei.agrifed.agrifedapi.service.impl;
 import mg.hei.agrifed.agrifedapi.dto.CreateMemberDto;
 import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.dto.MemberDto;
+import mg.hei.agrifed.agrifedapi.dto.MemberOccupation;
 import mg.hei.agrifed.agrifedapi.dto.SponsorDto;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
-import mg.hei.agrifed.agrifedapi.entity.GenderEnum;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
 import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
@@ -13,6 +13,7 @@ import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
+import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -158,9 +159,9 @@ public class MemberServiceImpl implements MemberService {
                 .collect(Collectors.toList());
     }
 
-    private GenderEnum mapGenderToEntity(Gender gender) {
+    private Gender mapGenderToEntity(Gender gender) {
         if (gender == null) return null;
-        return GenderEnum.valueOf(gender.name());
+        return EnumConverter.fromDb(gender.name(), Gender.class);
     }
 
     private MemberDto mapToDto(Member entity) {

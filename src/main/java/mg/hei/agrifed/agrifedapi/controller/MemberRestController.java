@@ -3,6 +3,7 @@ package mg.hei.agrifed.agrifedapi.controller;
 import mg.hei.agrifed.agrifedapi.dto.CreateMemberDto;
 import mg.hei.agrifed.agrifedapi.dto.MemberDto;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
+import mg.hei.agrifed.agrifedapi.validator.EmptyArrayValidator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ public class MemberRestController {
 
     @PostMapping
     public ResponseEntity<List<MemberDto>> createMembers(@RequestBody List<CreateMemberDto> members) {
+        EmptyArrayValidator.validateNotEmpty(members.toArray(new CreateMemberDto[0]), "members");
         List<MemberDto> created = memberService.createMembers(members);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }

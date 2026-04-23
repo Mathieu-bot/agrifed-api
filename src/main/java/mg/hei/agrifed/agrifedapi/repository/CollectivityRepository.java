@@ -9,6 +9,7 @@ public interface CollectivityRepository {
     Collectivity save(Collectivity collectivity);
     Optional<Collectivity> findById(Integer id);
     Optional<Collectivity> findByNumber(String number);
+    Optional<Collectivity> findByName(String name);
     List<Collectivity> findAll();
     List<Collectivity> findByIdIn(List<Integer> ids);
     Collectivity update(Collectivity collectivity);

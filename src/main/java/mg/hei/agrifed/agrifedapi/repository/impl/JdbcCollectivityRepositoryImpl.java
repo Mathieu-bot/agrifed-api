@@ -95,6 +95,26 @@ public class JdbcCollectivityRepositoryImpl implements CollectivityRepository {
     }
 
     @Override
+    public Optional<Collectivity> findByName(String name) {
+        String sql = "SELECT id, number, name, specialty, city, creation_date, federation_id, status, location, federation_approval, authorized_by, authorization_date, rejection_reason FROM collectivity WHERE name = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, name);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                return Optional.of(mapRowToCollectivity(rs));
+            }
+            return Optional.empty();
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find collectivity by name: " + name, e);
+        }
+    }
+
+    @Override
     public List<Collectivity> findAll() {
         String sql = "SELECT id, number, name, specialty, city, creation_date, federation_id, status, location, federation_approval, authorized_by, authorization_date, rejection_reason FROM collectivity";
 

@@ -1,10 +1,11 @@
 package mg.hei.agrifed.agrifedapi.repository.impl;
 
 import mg.hei.agrifed.agrifedapi.config.DataSourceConfig.DataSource;
-import mg.hei.agrifed.agrifedapi.entity.GenderEnum;
+import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.DatabaseException;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
+import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             stmt.setString(1, member.getLastName());
             stmt.setString(2, member.getFirstName());
             stmt.setDate(3, member.getBirthDate() != null ? Date.valueOf(member.getBirthDate()) : null);
-            stmt.setString(4, member.getGender() != null ? member.getGender().name().toLowerCase() : null);
+            stmt.setString(4, EnumConverter.toDb(member.getGender()));
             stmt.setString(5, member.getAddress());
             stmt.setString(6, member.getOccupation());
             stmt.setString(7, member.getPhone());
@@ -152,7 +153,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             stmt.setString(1, member.getLastName());
             stmt.setString(2, member.getFirstName());
             stmt.setDate(3, member.getBirthDate() != null ? Date.valueOf(member.getBirthDate()) : null);
-            stmt.setString(4, member.getGender() != null ? member.getGender().name().toLowerCase() : null);
+            stmt.setString(4, EnumConverter.toDb(member.getGender()));
             stmt.setString(5, member.getAddress());
             stmt.setString(6, member.getOccupation());
             stmt.setString(7, member.getPhone());
@@ -219,9 +220,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
         }
 
         String gender = rs.getString("gender");
-        if (gender != null) {
-            member.setGender(GenderEnum.valueOf(gender.toUpperCase()));
-        }
+        member.setGender(EnumConverter.fromDb(gender, Gender.class));
 
         member.setAddress(rs.getString("address"));
         member.setOccupation(rs.getString("occupation"));
