@@ -21,7 +21,7 @@ public class CollectivityTransactionRestController {
 
     @GetMapping
     public ResponseEntity<List<CollectivityTransactionDto>> getTransactions(
-            @PathVariable Integer id,
+            @PathVariable String id,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(transactionService.getTransactions(id, from, to));

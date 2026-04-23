@@ -93,7 +93,7 @@ public class CollectivityServiceImpl implements CollectivityService {
             entity.setCity(dto.getLocation());
             entity.setLocation(dto.getLocation());
             entity.setCreationDate(LocalDate.now());
-            entity.setFederationId(1);
+            entity.setFederationId("1");
             entity.setStatus("PENDING");
 
             Collectivity saved = collectivityRepository.save(entity);
@@ -130,15 +130,8 @@ public class CollectivityServiceImpl implements CollectivityService {
             throw new BadRequestException("Number is required");
         }
 
-        Integer collectivityId;
-        try {
-            collectivityId = Integer.parseInt(id);
-        } catch (NumberFormatException e) {
-            throw new BadRequestException("Invalid collectivity ID: " + id);
-        }
-
-        Collectivity existing = collectivityRepository.findById(collectivityId)
-                .orElseThrow(() -> new ResourceNotFoundException("Collectivity", collectivityId));
+        Collectivity existing = collectivityRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Collectivity", id));
 
         if (!"PENDING".equals(existing.getStatus())) {
             throw new BadRequestException("Collectivity already has name and number assigned - cannot be modified");
@@ -167,18 +160,8 @@ public class CollectivityServiceImpl implements CollectivityService {
             return new ArrayList<>();
         }
 
-        List<Integer> memberInts = memberIds.stream()
-                .map(id -> {
-                    try {
-                        return Integer.parseInt(id);
-                    } catch (NumberFormatException e) {
-                        throw new BadRequestException("Invalid member ID: " + id);
-                    }
-                })
-                .collect(Collectors.toList());
-
-        List<Member> memberEntities = memberRepository.findByIdIn(memberInts);
-        if (memberEntities.size() != memberInts.size()) {
+        List<Member> memberEntities = memberRepository.findByIdIn(memberIds);
+        if (memberEntities.size() != memberIds.size()) {
             throw new NotFoundException("One or more members not found");
         }
 
@@ -188,7 +171,7 @@ public class CollectivityServiceImpl implements CollectivityService {
     private void validateStructureMembers(CreateCollectivityStructure structure, List<Member> members) {
         if (structure == null) return;
 
-        List<Integer> memberIds = members.stream()
+        List<String> memberIds = members.stream()
                 .map(Member::getId)
                 .toList();
 
@@ -205,35 +188,35 @@ public class CollectivityServiceImpl implements CollectivityService {
             throw new BadRequestException("Secretary position must be filled");
         }
 
-        if (!memberIds.contains(Integer.parseInt(structure.getPresident()))) {
+        if (!memberIds.contains(structure.getPresident())) {
             throw new NotFoundException("President member not found");
         }
-        if (!memberIds.contains(Integer.parseInt(structure.getVicePresident()))) {
+        if (!memberIds.contains(structure.getVicePresident())) {
             throw new NotFoundException("Vice president member not found");
         }
-        if (!memberIds.contains(Integer.parseInt(structure.getTreasurer()))) {
+        if (!memberIds.contains(structure.getTreasurer())) {
             throw new NotFoundException("Treasurer member not found");
         }
-        if (!memberIds.contains(Integer.parseInt(structure.getSecretary()))) {
+        if (!memberIds.contains(structure.getSecretary())) {
             throw new NotFoundException("Secretary member not found");
         }
     }
 
-    private void saveStructure(Integer collectivityId, CreateCollectivityStructure createStructure) {
+    private void saveStructure(String collectivityId, CreateCollectivityStructure createStructure) {
         CollectivityStructureEntity entity = new CollectivityStructureEntity();
         entity.setCollectivityId(collectivityId);
 
         if (createStructure.getPresident() != null) {
-            entity.setPresidentId(Integer.parseInt(createStructure.getPresident()));
+            entity.setPresidentId(createStructure.getPresident());
         }
         if (createStructure.getVicePresident() != null) {
-            entity.setVicePresidentId(Integer.parseInt(createStructure.getVicePresident()));
+            entity.setVicePresidentId(createStructure.getVicePresident());
         }
         if (createStructure.getTreasurer() != null) {
-            entity.setTreasurerId(Integer.parseInt(createStructure.getTreasurer()));
+            entity.setTreasurerId(createStructure.getTreasurer());
         }
         if (createStructure.getSecretary() != null) {
-            entity.setSecretaryId(Integer.parseInt(createStructure.getSecretary()));
+            entity.setSecretaryId(createStructure.getSecretary());
         }
 
         structureRepository.save(entity);
@@ -241,7 +224,7 @@ public class CollectivityServiceImpl implements CollectivityService {
 
     private CollectivityDto mapToDto(Collectivity entity) {
         CollectivityDto dto = new CollectivityDto();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());
         dto.setNumber(entity.getNumber());
         dto.setName(entity.getName());
         dto.setLocation(entity.getLocation());
@@ -249,23 +232,23 @@ public class CollectivityServiceImpl implements CollectivityService {
         return dto;
     }
 
-    private CollectivityStructure mapStructureFromEntity(Integer collectivityId, CreateCollectivityStructure createStructure) {
+    private CollectivityStructure mapStructureFromEntity(String collectivityId, CreateCollectivityStructure createStructure) {
         CollectivityStructure structure = new CollectivityStructure();
 
         if (createStructure.getPresident() != null) {
-            Integer id = Integer.parseInt(createStructure.getPresident());
+            String id = createStructure.getPresident();
             memberRepository.findById(id).ifPresent(m -> structure.setPresident(mapMemberToDto(m)));
         }
         if (createStructure.getVicePresident() != null) {
-            Integer id = Integer.parseInt(createStructure.getVicePresident());
+            String id = createStructure.getVicePresident();
             memberRepository.findById(id).ifPresent(m -> structure.setVicePresident(mapMemberToDto(m)));
         }
         if (createStructure.getTreasurer() != null) {
-            Integer id = Integer.parseInt(createStructure.getTreasurer());
+            String id = createStructure.getTreasurer();
             memberRepository.findById(id).ifPresent(m -> structure.setTreasurer(mapMemberToDto(m)));
         }
         if (createStructure.getSecretary() != null) {
-            Integer id = Integer.parseInt(createStructure.getSecretary());
+            String id = createStructure.getSecretary();
             memberRepository.findById(id).ifPresent(m -> structure.setSecretary(mapMemberToDto(m)));
         }
 
@@ -286,7 +269,7 @@ public class CollectivityServiceImpl implements CollectivityService {
     }
 
     @Override
-    public CollectivityDto getById(Integer id) {
+    public CollectivityDto getById(String id) {
         Collectivity collectivity = collectivityRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + id));
 

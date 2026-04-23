@@ -9,16 +9,16 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Collectivity {
-    private Integer id;
+    private String id;
     private String number;
     private String name;
     private String specialty;
     private String city;
     private String location;
     private LocalDate creationDate;
-    private Integer federationId;
+    private String federationId;
     private String status;
-    private Integer authorizedBy;
+    private String authorizedBy;
     private LocalDate authorizationDate;
     private String rejectionReason;
     private Boolean federationApproval;

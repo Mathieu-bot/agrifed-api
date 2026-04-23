@@ -21,7 +21,7 @@ public class CollectivityFinancialAccountServiceImpl implements CollectivityFina
     private final CollectivityRepository collectivityRepository;
 
     @Override
-    public List<FinancialAccountDto> getFinancialAccounts(Integer collectivityId, LocalDate at) {
+    public List<FinancialAccountDto> getFinancialAccounts(String collectivityId, LocalDate at) {
         collectivityRepository.findById(collectivityId)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + collectivityId));
 
@@ -34,7 +34,7 @@ public class CollectivityFinancialAccountServiceImpl implements CollectivityFina
 
     private FinancialAccountDto toDto(AccountFull account) {
         FinancialAccountDto dto = new FinancialAccountDto();
-        dto.setId(String.valueOf(account.getId()));
+        dto.setId(account.getId());
         dto.setType(account.getType());
         dto.setAmount(account.getBalance());
 

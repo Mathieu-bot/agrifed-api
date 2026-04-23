@@ -24,7 +24,7 @@ public class MembershipFeeServiceImpl implements MembershipFeeService {
     }
 
     @Override
-    public List<MembershipFeeDto> getByCollectivity(Integer collectivityId) {
+    public List<MembershipFeeDto> getByCollectivity(String collectivityId) {
         collectivityRepository.findById(collectivityId)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + collectivityId));
 
@@ -35,7 +35,7 @@ public class MembershipFeeServiceImpl implements MembershipFeeService {
     }
 
     @Override
-    public List<MembershipFeeDto> createForCollectivity(Integer collectivityId, List<CreateMembershipFeeDto> dtos) {
+    public List<MembershipFeeDto> createForCollectivity(String collectivityId, List<CreateMembershipFeeDto> dtos) {
         collectivityRepository.findById(collectivityId)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + collectivityId));
 
@@ -65,7 +65,7 @@ public class MembershipFeeServiceImpl implements MembershipFeeService {
 
     private MembershipFeeDto toDto(MembershipFee f) {
         MembershipFeeDto dto = new MembershipFeeDto();
-        dto.setId(String.valueOf(f.getId()));
+        dto.setId(f.getId());
         dto.setEligibleFrom(f.getEligibleFrom() != null ? f.getEligibleFrom().toString() : null);
         dto.setFrequency(f.getFrequency() != null ? Frequency.valueOf(f.getFrequency()) : null);
         dto.setAmount(f.getAmount());

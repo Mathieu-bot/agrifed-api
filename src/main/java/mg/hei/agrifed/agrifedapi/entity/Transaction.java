@@ -13,10 +13,10 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class Transaction {
-    private Integer id;
-    private Integer accountId;
+    private String id;
+    private String accountId;
     private BigDecimal amount;
     private LocalDate transactionDate;
     private String description;
-    private Integer memberId;
+    private String memberId;
 }

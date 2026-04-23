@@ -12,10 +12,10 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class AccountFull {
-    private Integer id;
+    private String id;
     private String type;
-    private Integer collectivityId;
-    private Integer federationId;
+    private String collectivityId;
+    private String federationId;
     private BigDecimal balance;
 
     private String holderName;

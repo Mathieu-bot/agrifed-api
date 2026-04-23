@@ -9,7 +9,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Member {
-    private Integer id;
+    private String id;
     private String lastName;
     private String firstName;
     private LocalDate birthDate;
@@ -21,5 +21,5 @@ public class Member {
     private LocalDate membershipDate;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
-    private Integer collectivityId;
+    private String collectivityId;
 }

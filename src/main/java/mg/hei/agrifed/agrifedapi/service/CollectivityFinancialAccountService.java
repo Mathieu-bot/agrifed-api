@@ -6,5 +6,5 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface CollectivityFinancialAccountService {
-    List<FinancialAccountDto> getFinancialAccounts(Integer collectivityId, LocalDate at);
+    List<FinancialAccountDto> getFinancialAccounts(String collectivityId, LocalDate at);
 }

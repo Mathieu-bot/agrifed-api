@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface TransactionRepository {
     Transaction save(Transaction transaction);
-    List<Transaction> findByCollectivityIdAndDateBetween(Integer collectivityId, LocalDate from, LocalDate to);
+    List<Transaction> findByCollectivityIdAndDateBetween(String collectivityId, LocalDate from, LocalDate to);
 }

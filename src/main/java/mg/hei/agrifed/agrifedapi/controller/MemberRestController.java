@@ -41,7 +41,7 @@ public class MemberRestController {
             @PathVariable String id,
             @RequestBody List<CreateMemberPaymentDto> payments) {
         EmptyArrayValidator.validateNotEmpty(payments.toArray(new CreateMemberPaymentDto[0]), "payments");
-        List<MemberPaymentDto> created = memberPaymentService.createPayments(Integer.parseInt(id), payments);
+        List<MemberPaymentDto> created = memberPaymentService.createPayments(id, payments);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 }

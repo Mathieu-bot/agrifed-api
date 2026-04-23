@@ -24,18 +24,18 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
                 "VALUES (?, ?, ?, ?, ?) RETURNING id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, transaction.getAccountId());
+            stmt.setString(1, transaction.getAccountId());
             stmt.setBigDecimal(2, transaction.getAmount());
             stmt.setDate(3, Date.valueOf(
                     transaction.getTransactionDate() != null ? transaction.getTransactionDate() : LocalDate.now()));
             stmt.setString(4, transaction.getDescription());
             if (transaction.getMemberId() != null) {
-                stmt.setInt(5, transaction.getMemberId());
+                stmt.setString(5, transaction.getMemberId());
             } else {
-                stmt.setNull(5, Types.INTEGER);
+                stmt.setNull(5, Types.VARCHAR);
             }
             ResultSet rs = stmt.executeQuery();
-            if (rs.next()) transaction.setId(rs.getInt("id"));
+            if (rs.next()) transaction.setId(rs.getString("id"));
             return transaction;
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save transaction", e);
@@ -43,7 +43,7 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
     }
 
     @Override
-    public List<Transaction> findByCollectivityIdAndDateBetween(Integer collectivityId, LocalDate from, LocalDate to) {
+    public List<Transaction> findByCollectivityIdAndDateBetween(String collectivityId, LocalDate from, LocalDate to) {
         String sql = """
             SELECT t.id, t.account_id, t.amount, t.transaction_date, t.description, t.member_id
             FROM "transaction" t
@@ -55,7 +55,7 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
         List<Transaction> transactions = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
             stmt.setDate(2, Date.valueOf(from));
             stmt.setDate(3, Date.valueOf(to));
             ResultSet rs = stmt.executeQuery();
@@ -68,14 +68,14 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
 
     private Transaction mapRow(ResultSet rs) throws SQLException {
         Transaction t = new Transaction();
-        t.setId(rs.getInt("id"));
-        t.setAccountId(rs.getInt("account_id"));
+        t.setId(rs.getString("id"));
+        t.setAccountId(rs.getString("account_id"));
         t.setAmount(rs.getBigDecimal("amount"));
         Date d = rs.getDate("transaction_date");
         if (d != null) t.setTransactionDate(d.toLocalDate());
         t.setDescription(rs.getString("description"));
-        int memberId = rs.getInt("member_id");
-        if (!rs.wasNull()) t.setMemberId(memberId);
+        String memberId = rs.getString("member_id");
+        if (memberId != null) t.setMemberId(memberId);
         return t;
     }
 }

@@ -16,7 +16,7 @@ public class ErrorResponse {
     private String message;
     private String field;
     private String resourceType;
-    private Integer resourceId;
+    private String resourceId;
     private String rule;
     private Object details;
 }

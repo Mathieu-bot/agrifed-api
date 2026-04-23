@@ -8,11 +8,11 @@ import java.util.Optional;
 public interface MemberRepository {
 
     Member save(Member member);
-    Optional<Member> findById(Integer id);
+    Optional<Member> findById(String id);
     Optional<Member> findByEmail(String email);
     List<Member> findAll();
-    List<Member> findByIdIn(List<Integer> ids);
+    List<Member> findByIdIn(List<String> ids);
     Member update(Member member);
-    void deleteById(Integer id);
-    List<Member> findByCollectivityId(Integer collectivityId);
+    void deleteById(String id);
+    List<Member> findByCollectivityId(String collectivityId);
 }

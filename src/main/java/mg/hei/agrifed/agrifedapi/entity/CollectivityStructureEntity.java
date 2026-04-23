@@ -7,10 +7,10 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CollectivityStructureEntity {
-    private Integer id;
-    private Integer collectivityId;
-    private Integer presidentId;
-    private Integer vicePresidentId;
-    private Integer treasurerId;
-    private Integer secretaryId;
+    private String id;
+    private String collectivityId;
+    private String presidentId;
+    private String vicePresidentId;
+    private String treasurerId;
+    private String secretaryId;
 }

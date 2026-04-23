@@ -18,7 +18,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
     private final DataSource dataSource;
 
     @Override
-    public Optional<AccountFull> findById(Integer id) {
+    public Optional<AccountFull> findById(String id) {
         String sql = """
             SELECT a.id, a.type, a.collectivity_id, a.federation_id, a.balance,
                    ae.holder_name   AS bank_holder,  ae.bank_name, ae.account_number, ae.rib_key,
@@ -31,7 +31,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, id);
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) return Optional.of(mapRow(rs));
             return Optional.empty();
@@ -41,7 +41,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
     }
 
     @Override
-    public List<AccountFull> findByCollectivityId(Integer collectivityId) {
+    public List<AccountFull> findByCollectivityId(String collectivityId) {
         String sql = """
             SELECT a.id, a.type, a.collectivity_id, a.federation_id, a.balance,
                    ae.holder_name   AS bank_holder,  ae.bank_name, ae.account_number, ae.rib_key,
@@ -55,7 +55,7 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
         List<AccountFull> accounts = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 accounts.add(mapRow(rs));
@@ -67,12 +67,12 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
     }
 
     @Override
-    public void updateBalance(Integer accountId, BigDecimal delta) {
+    public void updateBalance(String accountId, BigDecimal delta) {
         String sql = "UPDATE account SET balance = balance + ? WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setBigDecimal(1, delta);
-            stmt.setInt(2, accountId);
+            stmt.setString(2, accountId);
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new DatabaseException("Failed to update account balance", e);
@@ -81,10 +81,10 @@ public class JdbcAccountRepositoryImpl implements AccountRepository {
 
     private AccountFull mapRow(ResultSet rs) throws SQLException {
         AccountFull a = new AccountFull();
-        a.setId(rs.getInt("id"));
+        a.setId(rs.getString("id"));
         a.setType(rs.getString("type"));
-        a.setCollectivityId(rs.getObject("collectivity_id") != null ? rs.getInt("collectivity_id") : null);
-        a.setFederationId(rs.getObject("federation_id") != null ? rs.getInt("federation_id") : null);
+        a.setCollectivityId(rs.getString("collectivity_id"));
+        a.setFederationId(rs.getString("federation_id"));
         a.setBalance(rs.getBigDecimal("balance") != null ? rs.getBigDecimal("balance") : BigDecimal.ZERO);
 
         String type = rs.getString("type");
