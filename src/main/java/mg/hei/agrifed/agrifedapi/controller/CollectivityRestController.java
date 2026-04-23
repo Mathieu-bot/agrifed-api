@@ -48,12 +48,12 @@ public class CollectivityRestController {
     public ResponseEntity<List<FinancialAccountDto>> getFinancialAccounts(
             @PathVariable String id,
             @RequestParam(name = "at", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate at) {
-        List<FinancialAccountDto> accounts = financialAccountService.getFinancialAccounts(Integer.parseInt(id), at);
+        List<FinancialAccountDto> accounts = financialAccountService.getFinancialAccounts(id, at);
         return ResponseEntity.ok(accounts);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CollectivityDto> getCollectivity(@PathVariable Integer id) {
+    public ResponseEntity<CollectivityDto> getCollectivity(@PathVariable String id) {
         return ResponseEntity.ok(collectivityService.getById(id));
     }
 }

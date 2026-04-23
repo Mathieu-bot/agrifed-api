@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AccountRepository {
-    Optional<AccountFull> findById(Integer id);
-    List<AccountFull> findByCollectivityId(Integer collectivityId);
-    void updateBalance(Integer accountId, BigDecimal delta);
+    Optional<AccountFull> findById(String id);
+    List<AccountFull> findByCollectivityId(String collectivityId);
+    void updateBalance(String accountId, BigDecimal delta);
 }

@@ -10,21 +10,21 @@
 DROP TABLE IF EXISTS membership_fee CASCADE;
 
 CREATE TABLE membership_fee (
-    id SERIAL PRIMARY KEY,
+    id VARCHAR(20) PRIMARY KEY,
     eligible_from DATE,
     frequency VARCHAR(20) NOT NULL CHECK (frequency IN ('WEEKLY','MONTHLY','ANNUALLY','PUNCTUALLY')),
     amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
     label VARCHAR(150),
     status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
-    collectivity_id INTEGER NOT NULL,
+    collectivity_id VARCHAR(20) NOT NULL,
     CONSTRAINT membership_fee_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE
 );
 
 -- ------------------------------------------------------------
 -- Modify contribution (EXISTING table)
 -- ------------------------------------------------------------
-ALTER TABLE contribution ADD COLUMN membership_fee_id INTEGER;
-ALTER TABLE contribution ADD COLUMN account_credited_id INTEGER;
+ALTER TABLE contribution ADD COLUMN membership_fee_id VARCHAR(20);
+ALTER TABLE contribution ADD COLUMN account_credited_id VARCHAR(20);
 ALTER TABLE contribution ADD COLUMN creation_date DATE NOT NULL DEFAULT CURRENT_DATE;
 ALTER TABLE contribution ADD COLUMN label VARCHAR(150);
 

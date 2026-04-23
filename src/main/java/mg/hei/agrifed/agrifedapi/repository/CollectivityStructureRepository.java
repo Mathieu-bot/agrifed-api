@@ -7,8 +7,8 @@ import java.util.Optional;
 public interface CollectivityStructureRepository {
 
     CollectivityStructureEntity save(CollectivityStructureEntity structure);
-    Optional<CollectivityStructureEntity> findByCollectivityId(Integer collectivityId);
+    Optional<CollectivityStructureEntity> findByCollectivityId(String collectivityId);
 
-    void deleteByCollectivityId(Integer collectivityId);
+    void deleteByCollectivityId(String collectivityId);
     CollectivityStructureEntity update(CollectivityStructureEntity structure);
 }

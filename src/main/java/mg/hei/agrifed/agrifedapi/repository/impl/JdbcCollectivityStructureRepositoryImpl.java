@@ -23,32 +23,32 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, structure.getCollectivityId());
+            stmt.setString(1, structure.getCollectivityId());
 
             if (structure.getPresidentId() != null) {
-                stmt.setInt(2, structure.getPresidentId());
+                stmt.setString(2, structure.getPresidentId());
             } else {
-                stmt.setNull(2, Types.INTEGER);
+                stmt.setNull(2, Types.VARCHAR);
             }
             if (structure.getVicePresidentId() != null) {
-                stmt.setInt(3, structure.getVicePresidentId());
+                stmt.setString(3, structure.getVicePresidentId());
             } else {
-                stmt.setNull(3, Types.INTEGER);
+                stmt.setNull(3, Types.VARCHAR);
             }
             if (structure.getTreasurerId() != null) {
-                stmt.setInt(4, structure.getTreasurerId());
+                stmt.setString(4, structure.getTreasurerId());
             } else {
-                stmt.setNull(4, Types.INTEGER);
+                stmt.setNull(4, Types.VARCHAR);
             }
             if (structure.getSecretaryId() != null) {
-                stmt.setInt(5, structure.getSecretaryId());
+                stmt.setString(5, structure.getSecretaryId());
             } else {
-                stmt.setNull(5, Types.INTEGER);
+                stmt.setNull(5, Types.VARCHAR);
             }
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                structure.setId(rs.getInt("id"));
+                structure.setId(rs.getString("id"));
             }
             return structure;
 
@@ -58,13 +58,13 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
     }
 
     @Override
-    public Optional<CollectivityStructureEntity> findByCollectivityId(Integer collectivityId) {
+    public Optional<CollectivityStructureEntity> findByCollectivityId(String collectivityId) {
         String sql = "SELECT id, collectivity_id, president_id, vice_president_id, treasurer_id, secretary_id FROM collectivity_structure WHERE collectivity_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -78,13 +78,13 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
     }
 
     @Override
-    public void deleteByCollectivityId(Integer collectivityId) {
+    public void deleteByCollectivityId(String collectivityId) {
         String sql = "DELETE FROM collectivity_structure WHERE collectivity_id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
             stmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -100,26 +100,26 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             if (structure.getPresidentId() != null) {
-                stmt.setInt(1, structure.getPresidentId());
+                stmt.setString(1, structure.getPresidentId());
             } else {
-                stmt.setNull(1, Types.INTEGER);
+                stmt.setNull(1, Types.VARCHAR);
             }
             if (structure.getVicePresidentId() != null) {
-                stmt.setInt(2, structure.getVicePresidentId());
+                stmt.setString(2, structure.getVicePresidentId());
             } else {
-                stmt.setNull(2, Types.INTEGER);
+                stmt.setNull(2, Types.VARCHAR);
             }
             if (structure.getTreasurerId() != null) {
-                stmt.setInt(3, structure.getTreasurerId());
+                stmt.setString(3, structure.getTreasurerId());
             } else {
-                stmt.setNull(3, Types.INTEGER);
+                stmt.setNull(3, Types.VARCHAR);
             }
             if (structure.getSecretaryId() != null) {
-                stmt.setInt(4, structure.getSecretaryId());
+                stmt.setString(4, structure.getSecretaryId());
             } else {
-                stmt.setNull(4, Types.INTEGER);
+                stmt.setNull(4, Types.VARCHAR);
             }
-            stmt.setInt(5, structure.getId());
+            stmt.setString(5, structure.getId());
 
             stmt.executeUpdate();
             return structure;
@@ -131,23 +131,23 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
 
     private CollectivityStructureEntity mapRowToStructure(ResultSet rs) throws SQLException {
         CollectivityStructureEntity structure = new CollectivityStructureEntity();
-        structure.setId(rs.getInt("id"));
-        structure.setCollectivityId(rs.getInt("collectivity_id"));
+        structure.setId(rs.getString("id"));
+        structure.setCollectivityId(rs.getString("collectivity_id"));
 
-        int presidentId = rs.getInt("president_id");
-        if (!rs.wasNull()) {
+        String presidentId = rs.getString("president_id");
+        if (presidentId != null) {
             structure.setPresidentId(presidentId);
         }
-        int vicePresidentId = rs.getInt("vice_president_id");
-        if (!rs.wasNull()) {
+        String vicePresidentId = rs.getString("vice_president_id");
+        if (vicePresidentId != null) {
             structure.setVicePresidentId(vicePresidentId);
         }
-        int treasurerId = rs.getInt("treasurer_id");
-        if (!rs.wasNull()) {
+        String treasurerId = rs.getString("treasurer_id");
+        if (treasurerId != null) {
             structure.setTreasurerId(treasurerId);
         }
-        int secretaryId = rs.getInt("secretary_id");
-        if (!rs.wasNull()) {
+        String secretaryId = rs.getString("secretary_id");
+        if (secretaryId != null) {
             structure.setSecretaryId(secretaryId);
         }
 

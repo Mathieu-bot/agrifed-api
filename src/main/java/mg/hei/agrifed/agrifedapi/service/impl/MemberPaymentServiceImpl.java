@@ -29,7 +29,7 @@ public class MemberPaymentServiceImpl implements MemberPaymentService {
     private final AccountRepository accountRepository;
 
     @Override
-    public List<MemberPaymentDto> createPayments(Integer memberId, List<CreateMemberPaymentDto> payments) {
+    public List<MemberPaymentDto> createPayments(String memberId, List<CreateMemberPaymentDto> payments) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new NotFoundException("Member not found: " + memberId));
 
@@ -43,17 +43,17 @@ public class MemberPaymentServiceImpl implements MemberPaymentService {
                 throw new BadRequestException("Payment mode is required");
             }
 
-            Integer accountCreditedId = null;
+            String accountCreditedId = null;
             if (dto.getAccountCreditedIdentifier() != null && !dto.getAccountCreditedIdentifier().isBlank()) {
-                int accountId = Integer.parseInt(dto.getAccountCreditedIdentifier());
+                String accountId = dto.getAccountCreditedIdentifier();
                 AccountFull account = accountRepository.findById(accountId)
                         .orElseThrow(() -> new NotFoundException("Account not found: " + accountId));
                 accountCreditedId = accountId;
             }
 
-            Integer membershipFeeId = null;
+            String membershipFeeId = null;
             if (dto.getMembershipFeeIdentifier() != null && !dto.getMembershipFeeIdentifier().isBlank()) {
-                membershipFeeId = Integer.parseInt(dto.getMembershipFeeIdentifier());
+                membershipFeeId = dto.getMembershipFeeIdentifier();
             }
 
             Contribution contribution = new Contribution();
@@ -84,7 +84,7 @@ public class MemberPaymentServiceImpl implements MemberPaymentService {
             }
 
             MemberPaymentDto response = new MemberPaymentDto();
-            response.setId(String.valueOf(saved.getId()));
+            response.setId(saved.getId());
             response.setAmount(dto.getAmount());
             response.setPaymentMode(dto.getPaymentMode());
             response.setCreationDate(saved.getCreationDate());
@@ -102,7 +102,7 @@ public class MemberPaymentServiceImpl implements MemberPaymentService {
 
     private FinancialAccountDto toAccountDto(AccountFull account) {
         FinancialAccountDto dto = new FinancialAccountDto();
-        dto.setId(String.valueOf(account.getId()));
+        dto.setId(account.getId());
         dto.setType(account.getType());
         dto.setAmount(account.getBalance());
 

@@ -23,12 +23,12 @@ DROP TABLE IF EXISTS collectivity_structure CASCADE;
 
 
 CREATE TABLE collectivity_structure (
-    id SERIAL PRIMARY KEY,
-    collectivity_id INTEGER NOT NULL,
-    president_id INTEGER,
-    vice_president_id INTEGER,
-    treasurer_id INTEGER,
-    secretary_id INTEGER,
+    id VARCHAR(20) PRIMARY KEY,
+    collectivity_id VARCHAR(20) NOT NULL,
+    president_id VARCHAR(20),
+    vice_president_id VARCHAR(20),
+    treasurer_id VARCHAR(20),
+    secretary_id VARCHAR(20),
     CONSTRAINT collectivity_structure_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE,
     CONSTRAINT collectivity_structure_president_FK FOREIGN KEY (president_id) REFERENCES member(id) ON DELETE SET NULL,
     CONSTRAINT collectivity_structure_vice_president_FK FOREIGN KEY (vice_president_id) REFERENCES member(id) ON DELETE SET NULL,

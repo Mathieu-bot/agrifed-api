@@ -13,11 +13,11 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class MembershipFee {
-    private Integer id;
+    private String id;
     private LocalDate eligibleFrom;
     private String frequency;
     private BigDecimal amount;
     private String label;
     private String status;
-    private Integer collectivityId;
+    private String collectivityId;
 }

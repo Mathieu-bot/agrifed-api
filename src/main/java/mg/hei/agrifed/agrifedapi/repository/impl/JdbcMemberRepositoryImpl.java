@@ -39,7 +39,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                member.setId(rs.getInt("id"));
+                member.setId(rs.getString("id"));
             }
             return member;
 
@@ -49,13 +49,13 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public Optional<Member> findById(Integer id) {
+    public Optional<Member> findById(String id) {
         String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid FROM member WHERE id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -109,7 +109,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public List<Member> findByIdIn(List<Integer> ids) {
+    public List<Member> findByIdIn(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return new ArrayList<>();
         }
@@ -127,7 +127,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
              PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 
             for (int i = 0; i < ids.size(); i++) {
-                stmt.setInt(i + 1, ids.get(i));
+                stmt.setString(i + 1, ids.get(i));
             }
 
             ResultSet rs = stmt.executeQuery();
@@ -159,7 +159,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             stmt.setDate(9, member.getMembershipDate() != null ? Date.valueOf(member.getMembershipDate()) : null);
             stmt.setBoolean(10, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
             stmt.setBoolean(11, member.getMembershipDuesPaid() != null ? member.getMembershipDuesPaid() : false);
-            stmt.setInt(12, member.getId());
+            stmt.setString(12, member.getId());
 
             stmt.executeUpdate();
             return member;
@@ -170,13 +170,13 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public void deleteById(Integer id) {
+    public void deleteById(String id) {
         String sql = "DELETE FROM member WHERE id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, id);
+            stmt.setString(1, id);
             stmt.executeUpdate();
 
         } catch (SQLException e) {
@@ -185,7 +185,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
     }
 
     @Override
-    public List<Member> findByCollectivityId(Integer collectivityId) {
+    public List<Member> findByCollectivityId(String collectivityId) {
         String sql = "SELECT m.id, m.lastname, m.firstname, m.birth_date, m.gender, m.address, m.occupation, m.phone, m.email, m.membership_date, m.registration_fee_paid, m.membership_dues_paid FROM member m INNER JOIN membership_history mh ON m.id = mh.member_id WHERE mh.collectivity_id = ?";
 
         List<Member> members = new ArrayList<>();
@@ -193,7 +193,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setInt(1, collectivityId);
+            stmt.setString(1, collectivityId);
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
@@ -208,7 +208,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     private Member mapRowToMember(ResultSet rs) throws SQLException {
         Member member = new Member();
-        member.setId(rs.getInt("id"));
+        member.setId(rs.getString("id"));
         member.setLastName(rs.getString("lastname"));
         member.setFirstName(rs.getString("firstname"));
 

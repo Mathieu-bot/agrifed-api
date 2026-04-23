@@ -6,8 +6,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MembershipFeeRepository {
-    List<MembershipFee> findByCollectivityId(Integer collectivityId);
-    Optional<MembershipFee> findById(Integer id);
-    MembershipFee save(MembershipFee membershipFee);
-    void delete(Integer id);
+    MembershipFee save(MembershipFee fee);
+    Optional<MembershipFee> findById(String id);
+    List<MembershipFee> findByCollectivityId(String collectivityId);
+    MembershipFee update(MembershipFee fee);
+    void delete(String id);
 }

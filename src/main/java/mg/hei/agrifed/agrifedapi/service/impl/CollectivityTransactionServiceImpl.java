@@ -22,7 +22,7 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
     private final MemberRepository memberRepository;
 
     @Override
-    public List<CollectivityTransactionDto> getTransactions(Integer collectivityId, LocalDate from, LocalDate to) {
+    public List<CollectivityTransactionDto> getTransactions(String collectivityId, LocalDate from, LocalDate to) {
         collectivityRepository.findById(collectivityId)
                 .orElseThrow(() -> new NotFoundException("Collectivity not found: " + collectivityId));
 
@@ -39,7 +39,7 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
         List<CollectivityTransactionDto> result = new ArrayList<>();
         for (Transaction t : transactions) {
             CollectivityTransactionDto dto = new CollectivityTransactionDto();
-            dto.setId(String.valueOf(t.getId()));
+            dto.setId(t.getId());
             dto.setCreationDate(t.getTransactionDate() != null ? t.getTransactionDate().toString() : null);
             dto.setAmount(t.getAmount());
 
@@ -57,7 +57,7 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
 
     private FinancialAccountDto toAccountDto(AccountFull a) {
         FinancialAccountDto dto = new FinancialAccountDto();
-        dto.setId(String.valueOf(a.getId()));
+        dto.setId(a.getId());
         dto.setType(a.getType());
         dto.setAmount(a.getBalance());
         if ("bank".equals(a.getType())) {
@@ -77,7 +77,7 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
 
     private MemberDto toMemberDto(Member m) {
         MemberDto dto = new MemberDto();
-        dto.setId(String.valueOf(m.getId()));
+        dto.setId(m.getId());
         dto.setFirstName(m.getFirstName());
         dto.setLastName(m.getLastName());
         dto.setEmail(m.getEmail());

@@ -5,5 +5,5 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface CollectivityTransactionService {
-    List<CollectivityTransactionDto> getTransactions(Integer collectivityId, LocalDate from, LocalDate to);
+    List<CollectivityTransactionDto> getTransactions(String collectivityId, LocalDate from, LocalDate to);
 }

@@ -6,5 +6,5 @@ import mg.hei.agrifed.agrifedapi.dto.MemberPaymentDto;
 import java.util.List;
 
 public interface MemberPaymentService {
-    List<MemberPaymentDto> createPayments(Integer memberId, List<CreateMemberPaymentDto> payments);
+    List<MemberPaymentDto> createPayments(String memberId, List<CreateMemberPaymentDto> payments);
 }

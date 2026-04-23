@@ -13,16 +13,16 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class Contribution {
-    private Integer id;
+    private String id;
     private BigDecimal amount;
     private LocalDate collectionDate;
     private String paymentMethod;
     private String type;
     private BigDecimal federationPercentage;
-    private Integer memberId;
-    private Integer collectivityId;
-    private Integer membershipFeeId;
-    private Integer accountCreditedId;
+    private String memberId;
+    private String collectivityId;
+    private String membershipFeeId;
+    private String accountCreditedId;
     private LocalDate creationDate;
     private String label;
 }

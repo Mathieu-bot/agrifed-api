@@ -20,13 +20,13 @@ public class MembershipFeeRestController {
     }
 
     @GetMapping
-    public ResponseEntity<List<MembershipFeeDto>> getMembershipFees(@PathVariable Integer id) {
+    public ResponseEntity<List<MembershipFeeDto>> getMembershipFees(@PathVariable String id) {
         return ResponseEntity.ok(membershipFeeService.getByCollectivity(id));
     }
 
     @PostMapping
     public ResponseEntity<List<MembershipFeeDto>> createMembershipFees(
-            @PathVariable Integer id,
+            @PathVariable String id,
             @RequestBody List<CreateMembershipFeeDto> fees) {
         return ResponseEntity.ok(membershipFeeService.createForCollectivity(id, fees));
     }

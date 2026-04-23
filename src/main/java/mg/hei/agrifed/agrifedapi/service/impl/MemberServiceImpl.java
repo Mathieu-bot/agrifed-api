@@ -54,10 +54,9 @@ public class MemberServiceImpl implements MemberService {
                     .orElseThrow(() -> new NotFoundException("Collectivity not found: " + dto.getCollectivityIdentifier()));
 
             List<String> refereeIds = dto.getReferees();
-            List<Integer> sponsorIds = parseRefereeIds(refereeIds);
 
-            List<Member> sponsorEntities = memberRepository.findByIdIn(sponsorIds);
-            if (sponsorEntities.size() != sponsorIds.size()) {
+            List<Member> sponsorEntities = memberRepository.findByIdIn(refereeIds);
+            if (sponsorEntities.size() != refereeIds.size()) {
                 throw new NotFoundException("One or more sponsors not found");
             }
 
@@ -98,7 +97,7 @@ public class MemberServiceImpl implements MemberService {
         int sponsorsFromOtherCollectivities = 0;
 
         for (String refereeId : refereeIds) {
-            Integer sponsorId = Integer.parseInt(refereeId);
+            String sponsorId = refereeId;
 
             boolean isFromTargetCollectivity = false;
             for (Member m : membersInTarget) {
@@ -124,18 +123,6 @@ public class MemberServiceImpl implements MemberService {
         }
     }
 
-    private List<Integer> parseRefereeIds(List<String> refereeIds) {
-        return refereeIds.stream()
-                .map(id -> {
-                    try {
-                        return Integer.parseInt(id);
-                    } catch (NumberFormatException e) {
-                        throw new BadRequestException("Invalid referee ID: " + id);
-                    }
-                })
-                .collect(Collectors.toList());
-    }
-
     private String mapGenderToEntity(Gender gender) {
         if (gender == null) return null;
         return gender.name();
@@ -143,7 +130,7 @@ public class MemberServiceImpl implements MemberService {
 
     private MemberDto mapToDto(Member entity) {
         MemberDto dto = new MemberDto();
-        dto.setId(String.valueOf(entity.getId()));
+        dto.setId(entity.getId());
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate() != null ? entity.getBirthDate().toString() : null);
