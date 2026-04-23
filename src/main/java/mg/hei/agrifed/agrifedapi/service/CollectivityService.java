@@ -9,4 +9,5 @@ import java.util.List;
 public interface CollectivityService {
     List<CollectivityDto> createCollectivities(List<CreateCollectivityDto> collectivities);
     CollectivityDto assignNameAndNumber(String id, CollectivityInformationDto dto);
+    CollectivityDto getById(Integer id);
 }

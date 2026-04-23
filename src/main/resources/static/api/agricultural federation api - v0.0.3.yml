@@ -3,12 +3,12 @@ info:
   title: Agricultural federation API
   description: |
     # Versioning
-    This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are :
+    This API uses semantic versioning (MAJOR.MINOR.PATCH). Available versions are : 
     - v0.0.1 (2026-04-21) : POST /collectivities for collectivities creation and POST /members for members creation.
     - v0.0.2 (2026-04-22) : PUT /collectivities/{id}/informations for collectivity information update.
     - v0.0.3 (2026-04-23) : New features about membership fees, collectivities transactions and its financial accounts, and members payments.
-    - v0.0.4 (2026-04-23) : GET /collectivities/{id}/financialAccounts for retrieving collectivity accounts with balance.
-  version: 0.0.4
+    - v0.0.4 (2026-04-23) : GET /collectivities/{id} to retrieve a collectivity with its members, and GET /collectivities/{id}/financialAccounts to retrieve collectivity accounts balances at a given date.
+  version: 0.0.1
 servers:
   - url: 'https://localhost:8080'
 paths:
@@ -38,6 +38,20 @@ paths:
           description: Collectivity without federation approval or structure missing.
         404:
           description: Member not found.
+  '/collectivity/{id}':
+    get:
+      summary: Get a collectivity by ID
+      parameters:
+        $ref: "#/components/parameters/IdentifierPathVariable"
+      responses:
+        200:
+          description: Specific collectivity with its members.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collectivity'
+        404:
+          description: Collectivity not found.
   '/collectivities/{id}/informations':
     put:
       summary: Attribute collectivity informations to specific collectivity
@@ -147,37 +161,6 @@ paths:
           description: Provided query parameters occur some exceptions.
         404:
           description: Collectivity not found.
-  '/collectivities/{id}/financialAccounts':
-    get:
-      summary: Retrieve financial accounts of a collectivity with balance
-      description: |
-        Returns the list of financial accounts (cash, mobile banking, bank) belonging to a collectivity.
-        The optional `at` query parameter allows retrieving the account balance at a specific date.
-        If `at` is not provided, returns the current balance.
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
-        - in: query
-          name: at
-          schema:
-            type: string
-            format: date
-          required: false
-          description: Date at which to retrieve the account balance
-      responses:
-        200:
-          description: List of financial accounts for the specific collectivity
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FinancialAccount'
-        404:
-          description: Collectivity not found.
   '/members':
     post:
       summary: Create list of members
@@ -233,6 +216,13 @@ paths:
                   $ref: '#/components/schemas/MemberPayment'
 
 components:
+  parameters:
+    IdentifierPathVariable:
+      in: path
+      name: id
+      schema:
+        type: integer
+      required: true
   schemas:
     CreateCollectivity:
       type: object
