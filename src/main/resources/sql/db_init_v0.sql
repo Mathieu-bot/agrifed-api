@@ -43,7 +43,7 @@ CREATE TABLE member (
                         lastname VARCHAR(100) NOT NULL,
                         firstname VARCHAR(250) NOT NULL,
                         birth_date DATE NOT NULL,
-                        gender VARCHAR(10) NOT NULL CHECK (gender IN ('male', 'female')),
+                        gender VARCHAR(10) NOT NULL CHECK (gender IN ('MALE', 'FEMALE')),
                         address VARCHAR(255) NOT NULL,
                         occupation VARCHAR(100) NOT NULL,
                         phone VARCHAR(20) NOT NULL,
@@ -63,7 +63,7 @@ CREATE TABLE collectivity (
                               city VARCHAR(100),
                               creation_date DATE NOT NULL,
                               federation_id INTEGER NOT NULL,
-                              status VARCHAR(20) DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'approved', 'rejected')),
+                              status VARCHAR(20) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
                               authorized_by INTEGER,
                               authorization_date DATE,
                               rejection_reason VARCHAR(255),
@@ -77,8 +77,8 @@ CREATE TABLE collectivity (
 -- ------------------------------------------------------------
 CREATE TABLE position (
                           id SERIAL PRIMARY KEY,
-                          label VARCHAR(30) NOT NULL CHECK (label IN ('president', 'vice_president', 'treasurer', 'secretary', 'confirmed_member', 'junior_member')),
-                          context VARCHAR(20) NOT NULL CHECK (context IN ('both', 'collectivity', 'federation'))
+                          label VARCHAR(30) NOT NULL CHECK (label IN ('PRESIDENT', 'VICE_PRESIDENT', 'TREASURER', 'SECRETARY', 'CONFIRMED_MEMBER', 'JUNIOR_MEMBER')),
+                          context VARCHAR(20) NOT NULL CHECK (context IN ('BOTH', 'COLLECTIVITY', 'FEDERATION'))
 );
 
 -- ------------------------------------------------------------
@@ -148,7 +148,7 @@ CREATE TABLE membership_history (
                                     id SERIAL PRIMARY KEY,
                                     start_date DATE NOT NULL,
                                     end_date DATE,
-                                    reason VARCHAR(30) NOT NULL CHECK (reason IN ('admission', 'transfer', 'resignation')),
+                                    reason VARCHAR(30) NOT NULL CHECK (reason IN ('ADMISSION', 'TRANSFER', 'RESIGNATION')),
                                     member_id INTEGER NOT NULL,
                                     collectivity_id INTEGER NOT NULL,
                                     CONSTRAINT membership_history_member_FK FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE,
@@ -176,8 +176,8 @@ CREATE TABLE contribution (
                               id SERIAL PRIMARY KEY,
                               amount DECIMAL(12,2) NOT NULL CHECK (amount > 0),
                               collection_date DATE NOT NULL,
-                              payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('cash', 'bank_transfer', 'mobile_money')),
-                              type VARCHAR(20) NOT NULL CHECK (type IN ('admission', 'monthly', 'annual', 'one_time')),
+                              payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('CASH', 'BANK_TRANSFER', 'MOBILE_BANKING')),
+                              type VARCHAR(20) NOT NULL CHECK (type IN ('ADMISSION', 'MONTHLY', 'ANNUAL', 'ONE_TIME', 'WEEKLY', 'PUNCTUALLY')),
                               federation_percentage DECIMAL(5,2) DEFAULT 0 CHECK (federation_percentage >= 0 AND federation_percentage <= 100),
                               member_id INTEGER NOT NULL,
                               collectivity_id INTEGER NOT NULL,
@@ -226,7 +226,7 @@ CREATE TABLE account_extended (
 CREATE TABLE account_mobile (
                                 account_id INTEGER PRIMARY KEY,
                                 holder_name VARCHAR(150) NOT NULL,
-                                service_name VARCHAR(20) NOT NULL CHECK (service_name IN ('Orange_Money', 'Mvola', 'Airtel_Money')),
+                                service_name VARCHAR(20) NOT NULL CHECK (service_name IN ('ORANGE_MONEY', 'MVOLA', 'AIRTEL_MONEY')),
                                 phone_number VARCHAR(20) NOT NULL,
                                 CONSTRAINT account_mobile_account_FK FOREIGN KEY (account_id) REFERENCES account(id) ON DELETE CASCADE
 );
@@ -253,10 +253,10 @@ CREATE TABLE "transaction" (
 CREATE TABLE activity (
                           id SERIAL PRIMARY KEY,
                           name VARCHAR(100) NOT NULL,
-                          type VARCHAR(30) NOT NULL CHECK (type IN ('general_meeting', 'junior_training', 'exceptional')),
-                          activity_date DATE NOT NULL,
-                          is_mandatory BOOLEAN DEFAULT FALSE NOT NULL,
-                          target VARCHAR(10) NOT NULL CHECK (target IN ('all', 'juniors')),
+type VARCHAR(30) NOT NULL CHECK (type IN ('GENERAL_MEETING', 'JUNIOR_TRAINING', 'EXCEPTIONAL')),
+                           activity_date DATE NOT NULL,
+                           is_mandatory BOOLEAN DEFAULT FALSE NOT NULL,
+                           target VARCHAR(10) NOT NULL CHECK (target IN ('ALL', 'JUNIORS')),
                           collectivity_id INTEGER,
                           federation_id INTEGER,
                           CHECK (
@@ -275,7 +275,7 @@ CREATE TABLE activity (
 CREATE TABLE attendance (
                             id SERIAL PRIMARY KEY,
                             attendance_date DATE NOT NULL,
-                            status VARCHAR(10) NOT NULL CHECK (status IN ('present', 'absent', 'excused')),
+                            status VARCHAR(10) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT', 'EXCUSED')),
                             absence_reason VARCHAR(255),
                             is_external BOOLEAN DEFAULT FALSE NOT NULL,
                             member_id INTEGER NOT NULL,

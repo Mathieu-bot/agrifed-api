@@ -11,7 +11,6 @@ import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
-import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -92,24 +91,23 @@ public class MemberServiceImpl implements MemberService {
 
     private void validateSponsorDistribution(List<String> refereeIds, Collectivity targetCollectivity) {
         int totalSponsors = refereeIds.size();
-        
-        List<Member> allFederationMembers = memberRepository.findAll();
-        
+
+        List<Member> membersInTarget = memberRepository.findByCollectivityId(targetCollectivity.getId());
+
         int sponsorsFromCollectivity = 0;
         int sponsorsFromOtherCollectivities = 0;
-        
+
         for (String refereeId : refereeIds) {
             Integer sponsorId = Integer.parseInt(refereeId);
-            
+
             boolean isFromTargetCollectivity = false;
-            List<Member> membersInTarget = memberRepository.findByCollectivityId(targetCollectivity.getId());
             for (Member m : membersInTarget) {
                 if (m.getId().equals(sponsorId)) {
                     isFromTargetCollectivity = true;
                     break;
                 }
             }
-            
+
             if (isFromTargetCollectivity) {
                 sponsorsFromCollectivity++;
             } else {
@@ -122,19 +120,6 @@ public class MemberServiceImpl implements MemberService {
                 "At least one sponsor must be from the target collectivity",
                 "SPONSOR_FROM_COLLECTIVITY_REQUIRED",
                 java.util.Map.of("fromTarget", sponsorsFromCollectivity, "fromOther", sponsorsFromOtherCollectivities)
-            );
-        }
-
-        int expectedFromCollectivity = totalSponsors - sponsorsFromOtherCollectivities;
-        if (sponsorsFromCollectivity != expectedFromCollectivity) {
-            throw new BusinessRuleViolationException(
-                "Sponsor distribution invalid: number from collectivity must equal number from other federation members",
-                "SPONSOR_DISTRIBUTION_INVALID",
-                java.util.Map.of(
-                    "fromCollectivity", sponsorsFromCollectivity,
-                    "fromOtherCollectivities", sponsorsFromOtherCollectivities,
-                    "total", totalSponsors
-                )
             );
         }
     }
@@ -151,9 +136,9 @@ public class MemberServiceImpl implements MemberService {
                 .collect(Collectors.toList());
     }
 
-    private Gender mapGenderToEntity(Gender gender) {
+    private String mapGenderToEntity(Gender gender) {
         if (gender == null) return null;
-        return EnumConverter.fromDb(gender.name(), Gender.class);
+        return gender.name();
     }
 
     private MemberDto mapToDto(Member entity) {
@@ -162,7 +147,7 @@ public class MemberServiceImpl implements MemberService {
         dto.setFirstName(entity.getFirstName());
         dto.setLastName(entity.getLastName());
         dto.setBirthDate(entity.getBirthDate() != null ? entity.getBirthDate().toString() : null);
-        dto.setGender(entity.getGender() != null ? Gender.valueOf(entity.getGender().name()) : null);
+        dto.setGender(entity.getGender() != null ? Gender.valueOf(entity.getGender()) : null);
         dto.setAddress(entity.getAddress());
         dto.setProfession(entity.getOccupation());
         dto.setPhoneNumber(entity.getPhone());

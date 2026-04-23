@@ -1,7 +1,6 @@
 package mg.hei.agrifed.agrifedapi.entity;
 
 import lombok.*;
-import mg.hei.agrifed.agrifedapi.dto.Gender;
 
 import java.time.LocalDate;
 
@@ -14,7 +13,7 @@ public class Member {
     private String lastName;
     private String firstName;
     private LocalDate birthDate;
-    private Gender gender;
+    private String gender;
     private String address;
     private String occupation;
     private String phone;
@@ -22,4 +21,5 @@ public class Member {
     private LocalDate membershipDate;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
+    private Integer collectivityId;
 }

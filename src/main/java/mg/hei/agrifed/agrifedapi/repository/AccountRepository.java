@@ -2,9 +2,12 @@ package mg.hei.agrifed.agrifedapi.repository;
 
 import mg.hei.agrifed.agrifedapi.entity.AccountFull;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 public interface AccountRepository {
     Optional<AccountFull> findById(Integer id);
-    void updateBalance(Integer accountId, java.math.BigDecimal delta);
+    List<AccountFull> findByCollectivityId(Integer collectivityId);
+    void updateBalance(Integer accountId, BigDecimal delta);
 }

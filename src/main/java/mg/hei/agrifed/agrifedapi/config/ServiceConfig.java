@@ -40,4 +40,21 @@ public class ServiceConfig {
         return new CollectivityTransactionServiceImpl(
                 transactionRepository, collectivityRepository, accountRepository, memberRepository);
     }
+
+    @Bean
+    public CollectivityFinancialAccountService collectivityFinancialAccountService(
+            AccountRepository accountRepository,
+            CollectivityRepository collectivityRepository) {
+        return new CollectivityFinancialAccountServiceImpl(accountRepository, collectivityRepository);
+    }
+
+    @Bean
+    public MemberPaymentService memberPaymentService(
+            MemberRepository memberRepository,
+            ContributionRepository contributionRepository,
+            TransactionRepository transactionRepository,
+            AccountRepository accountRepository) {
+        return new MemberPaymentServiceImpl(
+                memberRepository, contributionRepository, transactionRepository, accountRepository);
+    }
 }
