@@ -19,7 +19,7 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
 @Override
     public CollectivityStructureEntity save(CollectivityStructureEntity structure) {
         if (structure.getId() == null || structure.getId().isBlank()) {
-            throw new IllegalArgumentException("CollectivityStructure ID is required");
+            structure.setId("cs-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = "INSERT INTO collectivity_structure (id, collectivity_id, president_id, vice_president_id, treasurer_id, secretary_id) VALUES (?, ?, ?, ?, ?, ?)";

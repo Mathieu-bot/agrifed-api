@@ -39,7 +39,7 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
     @Override
     public MembershipFee save(MembershipFee fee) {
         if (fee.getId() == null || fee.getId().isBlank()) {
-            throw new IllegalArgumentException("MembershipFee ID is required");
+            fee.setId("fee-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = "INSERT INTO membership_fee (id, eligible_from, frequency, amount, label, status, collectivity_id) " +

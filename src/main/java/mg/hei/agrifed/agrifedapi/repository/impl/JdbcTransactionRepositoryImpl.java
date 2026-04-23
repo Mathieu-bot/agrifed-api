@@ -21,7 +21,7 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
     @Override
     public Transaction save(Transaction transaction) {
         if (transaction.getId() == null || transaction.getId().isBlank()) {
-            throw new IllegalArgumentException("Transaction ID is required");
+            transaction.setId("txn-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = "INSERT INTO \"transaction\" (id, account_id, amount, transaction_date, description, member_id) " +

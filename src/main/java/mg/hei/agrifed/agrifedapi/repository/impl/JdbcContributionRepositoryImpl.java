@@ -22,7 +22,7 @@ public class JdbcContributionRepositoryImpl implements ContributionRepository {
     @Override
     public Contribution save(Contribution contribution) {
         if (contribution.getId() == null || contribution.getId().isBlank()) {
-            throw new IllegalArgumentException("Contribution ID is required");
+            contribution.setId("con-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = """

@@ -8,6 +8,7 @@ import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
 import mg.hei.agrifed.agrifedapi.exception.BusinessRuleViolationException;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
+import mg.hei.agrifed.agrifedapi.mapper.MemberMapper;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.MemberService;
@@ -24,10 +25,14 @@ public class MemberServiceImpl implements MemberService {
 
     private final MemberRepository memberRepository;
     private final CollectivityRepository collectivityRepository;
+    private final MemberMapper memberMapper;
 
-    public MemberServiceImpl(MemberRepository memberRepository, CollectivityRepository collectivityRepository) {
+    public MemberServiceImpl(MemberRepository memberRepository,
+                             CollectivityRepository collectivityRepository,
+                             MemberMapper memberMapper) {
         this.memberRepository = memberRepository;
         this.collectivityRepository = collectivityRepository;
+        this.memberMapper = memberMapper;
     }
 
     @Override
@@ -77,10 +82,8 @@ public class MemberServiceImpl implements MemberService {
 
             Member saved = memberRepository.save(entity);
 
-            MemberDto response = mapToDto(saved);
-            response.setReferees(sponsorEntities.stream()
-                    .map(this::mapToDto)
-                    .collect(Collectors.toList()));
+            MemberDto response = memberMapper.toDto(saved);
+            response.setReferees(memberMapper.toDtoList(sponsorEntities));
 
             createdMembers.add(response);
         }
@@ -126,19 +129,5 @@ public class MemberServiceImpl implements MemberService {
     private String mapGenderToEntity(Gender gender) {
         if (gender == null) return null;
         return gender.name();
-    }
-
-    private MemberDto mapToDto(Member entity) {
-        MemberDto dto = new MemberDto();
-        dto.setId(entity.getId());
-        dto.setFirstName(entity.getFirstName());
-        dto.setLastName(entity.getLastName());
-        dto.setBirthDate(entity.getBirthDate() != null ? entity.getBirthDate().toString() : null);
-        dto.setGender(entity.getGender() != null ? Gender.valueOf(entity.getGender()) : null);
-        dto.setAddress(entity.getAddress());
-        dto.setProfession(entity.getOccupation());
-        dto.setPhoneNumber(entity.getPhone());
-        dto.setEmail(entity.getEmail());
-        return dto;
     }
 }

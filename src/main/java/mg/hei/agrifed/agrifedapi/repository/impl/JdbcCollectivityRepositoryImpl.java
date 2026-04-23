@@ -21,7 +21,7 @@ public class JdbcCollectivityRepositoryImpl implements CollectivityRepository {
 @Override
     public Collectivity save(Collectivity collectivity) {
         if (collectivity.getId() == null || collectivity.getId().isBlank()) {
-            throw new IllegalArgumentException("Collectivity ID is required");
+            collectivity.setId("col-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = "INSERT INTO collectivity (id, number, name, specialty, city, creation_date, federation_id, status, location, federation_approval, authorized_by, authorization_date, rejection_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

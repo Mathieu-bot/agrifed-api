@@ -21,7 +21,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
     @Override
     public Member save(Member member) {
         if (member.getId() == null || member.getId().isBlank()) {
-            throw new IllegalArgumentException("Member ID is required");
+            member.setId("mem-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
         String sql = "INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
