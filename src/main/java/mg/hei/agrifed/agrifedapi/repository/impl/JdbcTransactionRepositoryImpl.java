@@ -20,22 +20,26 @@ public class JdbcTransactionRepositoryImpl implements TransactionRepository {
 
     @Override
     public Transaction save(Transaction transaction) {
-        String sql = "INSERT INTO \"transaction\" (account_id, amount, transaction_date, description, member_id) " +
-                "VALUES (?, ?, ?, ?, ?) RETURNING id";
+        if (transaction.getId() == null || transaction.getId().isBlank()) {
+            throw new IllegalArgumentException("Transaction ID is required");
+        }
+
+        String sql = "INSERT INTO \"transaction\" (id, account_id, amount, transaction_date, description, member_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, transaction.getAccountId());
-            stmt.setBigDecimal(2, transaction.getAmount());
-            stmt.setDate(3, Date.valueOf(
+            stmt.setString(1, transaction.getId());
+            stmt.setString(2, transaction.getAccountId());
+            stmt.setBigDecimal(3, transaction.getAmount());
+            stmt.setDate(4, Date.valueOf(
                     transaction.getTransactionDate() != null ? transaction.getTransactionDate() : LocalDate.now()));
-            stmt.setString(4, transaction.getDescription());
+            stmt.setString(5, transaction.getDescription());
             if (transaction.getMemberId() != null) {
-                stmt.setString(5, transaction.getMemberId());
+                stmt.setString(6, transaction.getMemberId());
             } else {
-                stmt.setNull(5, Types.VARCHAR);
+                stmt.setNull(6, Types.VARCHAR);
             }
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) transaction.setId(rs.getString("id"));
+            stmt.executeUpdate();
             return transaction;
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save transaction", e);

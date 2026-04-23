@@ -38,20 +38,22 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
 
     @Override
     public MembershipFee save(MembershipFee fee) {
-        String sql = "INSERT INTO membership_fee (eligible_from, frequency, amount, label, status, collectivity_id) " +
-                "VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
+        if (fee.getId() == null || fee.getId().isBlank()) {
+            throw new IllegalArgumentException("MembershipFee ID is required");
+        }
+
+        String sql = "INSERT INTO membership_fee (id, eligible_from, frequency, amount, label, status, collectivity_id) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setDate(1, fee.getEligibleFrom() != null ? Date.valueOf(fee.getEligibleFrom()) : null);
-            stmt.setString(2, fee.getFrequency());
-            stmt.setBigDecimal(3, fee.getAmount());
-            stmt.setString(4, fee.getLabel());
-            stmt.setString(5, fee.getStatus() != null ? fee.getStatus() : "ACTIVE");
-            stmt.setString(6, fee.getCollectivityId());
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                fee.setId(rs.getString("id"));
-            }
+            stmt.setString(1, fee.getId());
+            stmt.setDate(2, fee.getEligibleFrom() != null ? Date.valueOf(fee.getEligibleFrom()) : null);
+            stmt.setString(3, fee.getFrequency());
+            stmt.setBigDecimal(4, fee.getAmount());
+            stmt.setString(5, fee.getLabel());
+            stmt.setString(6, fee.getStatus() != null ? fee.getStatus() : "ACTIVE");
+            stmt.setString(7, fee.getCollectivityId());
+            stmt.executeUpdate();
             return fee;
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save membership fee", e);

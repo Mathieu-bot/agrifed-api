@@ -18,35 +18,37 @@ public class JdbcCollectivityRepositoryImpl implements CollectivityRepository {
         this.dataSource = dataSource;
     }
 
-    @Override
+@Override
     public Collectivity save(Collectivity collectivity) {
-        String sql = "INSERT INTO collectivity (number, name, specialty, city, creation_date, federation_id, status, location, federation_approval, authorized_by, authorization_date, rejection_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        if (collectivity.getId() == null || collectivity.getId().isBlank()) {
+            throw new IllegalArgumentException("Collectivity ID is required");
+        }
+
+        String sql = "INSERT INTO collectivity (id, number, name, specialty, city, creation_date, federation_id, status, location, federation_approval, authorized_by, authorization_date, rejection_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, collectivity.getNumber());
-            stmt.setString(2, collectivity.getName());
-            stmt.setString(3, collectivity.getSpecialty());
-            stmt.setString(4, collectivity.getCity());
-            stmt.setDate(5, collectivity.getCreationDate() != null ? Date.valueOf(collectivity.getCreationDate()) : new Date(System.currentTimeMillis()));
-            stmt.setString(6, collectivity.getFederationId() != null ? collectivity.getFederationId() : "1");
-            stmt.setString(7, collectivity.getStatus() != null ? collectivity.getStatus() : "pending");
-            stmt.setString(8, collectivity.getLocation());
-            stmt.setBoolean(9, collectivity.getFederationApproval() != null ? collectivity.getFederationApproval() : false);
+            stmt.setString(1, collectivity.getId());
+            stmt.setString(2, collectivity.getNumber());
+            stmt.setString(3, collectivity.getName());
+            stmt.setString(4, collectivity.getSpecialty());
+            stmt.setString(5, collectivity.getCity());
+            stmt.setDate(6, collectivity.getCreationDate() != null ? Date.valueOf(collectivity.getCreationDate()) : new Date(System.currentTimeMillis()));
+            stmt.setString(7, collectivity.getFederationId() != null ? collectivity.getFederationId() : "1");
+            stmt.setString(8, collectivity.getStatus() != null ? collectivity.getStatus() : "PENDING");
+            stmt.setString(9, collectivity.getLocation());
+            stmt.setBoolean(10, collectivity.getFederationApproval() != null ? collectivity.getFederationApproval() : false);
 
             if (collectivity.getAuthorizedBy() != null) {
-                stmt.setString(10, collectivity.getAuthorizedBy());
+                stmt.setString(11, collectivity.getAuthorizedBy());
             } else {
-                stmt.setNull(10, Types.VARCHAR);
+                stmt.setNull(11, Types.VARCHAR);
             }
-            stmt.setDate(11, collectivity.getAuthorizationDate() != null ? Date.valueOf(collectivity.getAuthorizationDate()) : null);
-            stmt.setString(12, collectivity.getRejectionReason());
+            stmt.setDate(12, collectivity.getAuthorizationDate() != null ? Date.valueOf(collectivity.getAuthorizationDate()) : null);
+            stmt.setString(13, collectivity.getRejectionReason());
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                collectivity.setId(rs.getString("id"));
-            }
+            stmt.executeUpdate();
             return collectivity;
 
         } catch (SQLException e) {
