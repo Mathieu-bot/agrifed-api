@@ -61,10 +61,6 @@ public class CollectivityServiceImpl implements CollectivityService {
                 throw new BadRequestException("Location (city) is required");
             }
 
-            if (dto.getSpecialty() == null || dto.getSpecialty().isBlank()) {
-                throw new BadRequestException("Agricultural specialty is required");
-            }
-
             List<String> memberIds = dto.getMembers();
             if (memberIds == null || memberIds.size() < MIN_MEMBERS) {
                 throw new BusinessRuleViolationException(
