@@ -73,6 +73,18 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
         }
     }
 
+    @Override
+    public void delete(Integer id) {
+        String sql = "DELETE FROM membership_fee WHERE id = ?";
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to delete membership fee", e);
+        }
+    }
+
     private MembershipFee mapRow(ResultSet rs) throws SQLException {
         MembershipFee f = new MembershipFee();
         f.setId(rs.getInt("id"));

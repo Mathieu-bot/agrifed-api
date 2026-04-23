@@ -30,11 +30,6 @@ public class RepositoryConfig {
     }
 
     @Bean
-    public MemberPaymentRepository memberPaymentRepository(DataSource dataSource){
-        return new JdbcMemberPaymentRepositoryImpl(dataSource);
-    }
-
-    @Bean
     public AccountRepository accountRepository(DataSource dataSource){
         return new JdbcAccountRepositoryImpl(dataSource);
     }

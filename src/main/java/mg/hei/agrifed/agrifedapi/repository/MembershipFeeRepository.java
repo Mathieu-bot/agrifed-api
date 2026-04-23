@@ -7,6 +7,7 @@ import java.util.Optional;
 
 public interface MembershipFeeRepository {
     List<MembershipFee> findByCollectivityId(Integer collectivityId);
-    MembershipFee save(MembershipFee fee);
     Optional<MembershipFee> findById(Integer id);
+    MembershipFee save(MembershipFee membershipFee);
+    void delete(Integer id);
 }

@@ -7,6 +7,7 @@ import mg.hei.agrifed.agrifedapi.exception.BadRequestException;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
 import mg.hei.agrifed.agrifedapi.repository.*;
 import mg.hei.agrifed.agrifedapi.service.CollectivityTransactionService;
+import mg.hei.agrifed.agrifedapi.util.EnumConverter;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -62,12 +63,14 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
         dto.setAmount(a.getBalance());
         if ("bank".equals(a.getType())) {
             dto.setHolderName(a.getHolderName());
-            dto.setBankName(a.getBankName());
+            dto.setBankName(EnumConverter.fromDb(a.getBankName(), Bank.class));
+            dto.setBankCode(a.getBankCode());
+            dto.setBankBranchCode(a.getBankBranchCode());
             dto.setBankAccountNumber(a.getAccountNumber());
             dto.setBankAccountKey(a.getRibKey());
         } else if ("mobile_money".equals(a.getType())) {
             dto.setHolderName(a.getHolderName());
-            dto.setMobileBankingService(a.getServiceName());
+            dto.setMobileBankingService(EnumConverter.fromDb(a.getServiceName(), MobileBankingService.class));
             dto.setMobileNumber(a.getPhoneNumber());
         }
         return dto;

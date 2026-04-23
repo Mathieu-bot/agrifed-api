@@ -1,7 +1,7 @@
 package mg.hei.agrifed.agrifedapi.repository.impl;
 
 import mg.hei.agrifed.agrifedapi.config.DataSourceConfig.DataSource;
-import mg.hei.agrifed.agrifedapi.entity.GenderEnum;
+import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.exception.DatabaseException;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -220,7 +220,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
         }
 
         String gender = rs.getString("gender");
-        member.setGender(EnumConverter.fromDb(gender, GenderEnum.class));
+        member.setGender(EnumConverter.fromDb(gender, Gender.class));
 
         member.setAddress(rs.getString("address"));
         member.setOccupation(rs.getString("occupation"));
