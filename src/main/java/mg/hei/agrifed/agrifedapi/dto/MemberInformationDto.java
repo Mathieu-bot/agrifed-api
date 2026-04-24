@@ -1,5 +1,6 @@
 package mg.hei.agrifed.agrifedapi.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,6 +13,7 @@ public class MemberInformationDto {
     private Gender gender;
     private String address;
     private String profession;
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     private String phoneNumber;
     private String email;
     private MemberOccupation occupation;

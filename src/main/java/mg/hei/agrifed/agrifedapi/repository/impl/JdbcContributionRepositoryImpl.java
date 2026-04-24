@@ -21,41 +21,43 @@ public class JdbcContributionRepositoryImpl implements ContributionRepository {
 
     @Override
     public Contribution save(Contribution contribution) {
+        if (contribution.getId() == null || contribution.getId().isBlank()) {
+            contribution.setId("con-" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        }
+
         String sql = """
-            INSERT INTO contribution (amount, collection_date, payment_method, type,
+            INSERT INTO contribution (id, amount, collection_date, payment_method, type,
                 federation_percentage, member_id, collectivity_id, membership_fee_id,
                 account_credited_id, creation_date, label)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setBigDecimal(1, contribution.getAmount());
-            stmt.setDate(2, contribution.getCollectionDate() != null
+            stmt.setString(1, contribution.getId());
+            stmt.setBigDecimal(2, contribution.getAmount());
+            stmt.setDate(3, contribution.getCollectionDate() != null
                 ? Date.valueOf(contribution.getCollectionDate()) : Date.valueOf(LocalDate.now()));
-            stmt.setString(3, contribution.getPaymentMethod());
-            stmt.setString(4, contribution.getType());
-            stmt.setBigDecimal(5, contribution.getFederationPercentage() != null
+            stmt.setString(4, contribution.getPaymentMethod());
+            stmt.setString(5, contribution.getType());
+            stmt.setBigDecimal(6, contribution.getFederationPercentage() != null
                 ? contribution.getFederationPercentage() : BigDecimal.ZERO);
-            stmt.setString(6, contribution.getMemberId());
-            stmt.setString(7, contribution.getCollectivityId());
+            stmt.setString(7, contribution.getMemberId());
+            stmt.setString(8, contribution.getCollectivityId());
             if (contribution.getMembershipFeeId() != null) {
-                stmt.setString(8, contribution.getMembershipFeeId());
-            } else {
-                stmt.setNull(8, Types.VARCHAR);
-            }
-            if (contribution.getAccountCreditedId() != null) {
-                stmt.setString(9, contribution.getAccountCreditedId());
+                stmt.setString(9, contribution.getMembershipFeeId());
             } else {
                 stmt.setNull(9, Types.VARCHAR);
             }
-            stmt.setDate(10, contribution.getCreationDate() != null
-                ? Date.valueOf(contribution.getCreationDate()) : Date.valueOf(LocalDate.now()));
-            stmt.setString(11, contribution.getLabel());
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                contribution.setId(rs.getString("id"));
+            if (contribution.getAccountCreditedId() != null) {
+                stmt.setString(10, contribution.getAccountCreditedId());
+            } else {
+                stmt.setNull(10, Types.VARCHAR);
             }
+            stmt.setDate(11, contribution.getCreationDate() != null
+                ? Date.valueOf(contribution.getCreationDate()) : Date.valueOf(LocalDate.now()));
+            stmt.setString(12, contribution.getLabel());
+
+            stmt.executeUpdate();
             return contribution;
         } catch (SQLException e) {
             throw new DatabaseException("Failed to save contribution", e);

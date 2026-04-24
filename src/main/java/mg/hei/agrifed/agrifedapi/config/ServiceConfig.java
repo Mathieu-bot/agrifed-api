@@ -1,5 +1,7 @@
 package mg.hei.agrifed.agrifedapi.config;
 
+import mg.hei.agrifed.agrifedapi.mapper.CollectivityMapper;
+import mg.hei.agrifed.agrifedapi.mapper.MemberMapper;
 import mg.hei.agrifed.agrifedapi.repository.*;
 import mg.hei.agrifed.agrifedapi.service.*;
 import mg.hei.agrifed.agrifedapi.service.impl.*;
@@ -13,15 +15,18 @@ public class ServiceConfig {
     public CollectivityService collectivityService(
             CollectivityRepository collectivityRepository,
             CollectivityStructureRepository structureRepository,
-            MemberRepository memberRepository) {
-        return new CollectivityServiceImpl(collectivityRepository, structureRepository, memberRepository);
+            MemberRepository memberRepository,
+            MemberMapper memberMapper,
+            CollectivityMapper collectivityMapper) {
+        return new CollectivityServiceImpl(collectivityRepository, structureRepository, memberRepository, memberMapper, collectivityMapper);
     }
 
     @Bean
     public MemberService memberService(
             MemberRepository memberRepository,
-            CollectivityRepository collectivityRepository) {
-        return new MemberServiceImpl(memberRepository, collectivityRepository);
+            CollectivityRepository collectivityRepository,
+            MemberMapper memberMapper) {
+        return new MemberServiceImpl(memberRepository, collectivityRepository, memberMapper);
     }
 
     @Bean

@@ -20,13 +20,17 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Member save(Member member) {
-        String sql = "INSERT INTO member (lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id";
+        if (member.getId() == null || member.getId().isBlank()) {
+            member.setId("mem-" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        }
+
+        String sql = "INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, member.getLastName());
-            stmt.setString(2, member.getFirstName());
+            stmt.setString(1, member.getId());
+            stmt.setString(2, member.getLastName());
             stmt.setDate(3, member.getBirthDate() != null ? Date.valueOf(member.getBirthDate()) : null);
             stmt.setString(4, member.getGender());
             stmt.setString(5, member.getAddress());
@@ -36,11 +40,9 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             stmt.setDate(9, member.getMembershipDate() != null ? Date.valueOf(member.getMembershipDate()) : new Date(System.currentTimeMillis()));
             stmt.setBoolean(10, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
             stmt.setBoolean(11, member.getMembershipDuesPaid() != null ? member.getMembershipDuesPaid() : false);
+            stmt.setBoolean(12, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
 
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                member.setId(rs.getString("id"));
-            }
+            stmt.executeUpdate();
             return member;
 
         } catch (SQLException e) {

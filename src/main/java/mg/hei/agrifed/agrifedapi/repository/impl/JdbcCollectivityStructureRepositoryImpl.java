@@ -16,40 +16,42 @@ public class JdbcCollectivityStructureRepositoryImpl implements CollectivityStru
         this.dataSource = dataSource;
     }
 
-    @Override
+@Override
     public CollectivityStructureEntity save(CollectivityStructureEntity structure) {
-        String sql = "INSERT INTO collectivity_structure (collectivity_id, president_id, vice_president_id, treasurer_id, secretary_id) VALUES (?, ?, ?, ?, ?) RETURNING id";
+        if (structure.getId() == null || structure.getId().isBlank()) {
+            structure.setId("cs-" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        }
+
+        String sql = "INSERT INTO collectivity_structure (id, collectivity_id, president_id, vice_president_id, treasurer_id, secretary_id) VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, structure.getCollectivityId());
+            stmt.setString(1, structure.getId());
+            stmt.setString(2, structure.getCollectivityId());
 
             if (structure.getPresidentId() != null) {
-                stmt.setString(2, structure.getPresidentId());
-            } else {
-                stmt.setNull(2, Types.VARCHAR);
-            }
-            if (structure.getVicePresidentId() != null) {
-                stmt.setString(3, structure.getVicePresidentId());
+                stmt.setString(3, structure.getPresidentId());
             } else {
                 stmt.setNull(3, Types.VARCHAR);
             }
-            if (structure.getTreasurerId() != null) {
-                stmt.setString(4, structure.getTreasurerId());
+            if (structure.getVicePresidentId() != null) {
+                stmt.setString(4, structure.getVicePresidentId());
             } else {
                 stmt.setNull(4, Types.VARCHAR);
             }
-            if (structure.getSecretaryId() != null) {
-                stmt.setString(5, structure.getSecretaryId());
+            if (structure.getTreasurerId() != null) {
+                stmt.setString(5, structure.getTreasurerId());
             } else {
                 stmt.setNull(5, Types.VARCHAR);
             }
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                structure.setId(rs.getString("id"));
+            if (structure.getSecretaryId() != null) {
+                stmt.setString(6, structure.getSecretaryId());
+            } else {
+                stmt.setNull(6, Types.VARCHAR);
             }
+
+            stmt.executeUpdate();
             return structure;
 
         } catch (SQLException e) {
