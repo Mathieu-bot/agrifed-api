@@ -101,7 +101,7 @@ public class CollectivityServiceImpl implements CollectivityService {
             entity.setCity(dto.getLocation());
             entity.setLocation(dto.getLocation());
             entity.setCreationDate(LocalDate.now());
-            entity.setFederationId("1");
+            entity.setFederationId("fed-1");
             entity.setStatus("PENDING");
 
             Collectivity saved = collectivityRepository.save(entity);

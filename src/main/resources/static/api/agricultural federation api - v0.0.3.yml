@@ -316,7 +316,7 @@ components:
         profession:
           type: string
         phoneNumber:
-          type: int
+          type: string
         email:
           type: string
         occupation:

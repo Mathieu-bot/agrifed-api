@@ -16,7 +16,6 @@ import mg.hei.agrifed.agrifedapi.service.MemberService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MemberServiceImpl implements MemberService {
 
@@ -55,7 +54,7 @@ public class MemberServiceImpl implements MemberService {
                 throw new BadRequestException("Collectivity identifier is required");
             }
 
-            Collectivity targetCollectivity = collectivityRepository.findByNumber(dto.getCollectivityIdentifier())
+            Collectivity targetCollectivity = collectivityRepository.findById(dto.getCollectivityIdentifier())
                     .orElseThrow(() -> new NotFoundException("Collectivity not found: " + dto.getCollectivityIdentifier()));
 
             List<String> refereeIds = dto.getReferees();

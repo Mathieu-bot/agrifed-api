@@ -35,7 +35,7 @@ public class JdbcCollectivityRepositoryImpl implements CollectivityRepository {
             stmt.setString(4, collectivity.getSpecialty());
             stmt.setString(5, collectivity.getCity());
             stmt.setDate(6, collectivity.getCreationDate() != null ? Date.valueOf(collectivity.getCreationDate()) : new Date(System.currentTimeMillis()));
-            stmt.setString(7, collectivity.getFederationId() != null ? collectivity.getFederationId() : "1");
+            stmt.setString(7, collectivity.getFederationId() != null ? collectivity.getFederationId() : "fed-1");
             stmt.setString(8, collectivity.getStatus() != null ? collectivity.getStatus() : "PENDING");
             stmt.setString(9, collectivity.getLocation());
             stmt.setBoolean(10, collectivity.getFederationApproval() != null ? collectivity.getFederationApproval() : false);
