@@ -2,6 +2,7 @@ package mg.hei.agrifed.agrifedapi.mapper;
 
 import mg.hei.agrifed.agrifedapi.dto.Gender;
 import mg.hei.agrifed.agrifedapi.dto.MemberDto;
+import mg.hei.agrifed.agrifedapi.dto.MemberOccupation;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.entity.Sponsorship;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -32,6 +33,7 @@ public class MemberMapper {
         dto.setProfession(member.getOccupation());
         dto.setPhoneNumber(member.getPhone());
         dto.setEmail(member.getEmail());
+        dto.setOccupation(toMemberOccupation(member.getMembershipType()));
         dto.setReferees(findReferees(member.getId()));
         return dto;
     }
@@ -45,6 +47,15 @@ public class MemberMapper {
         if (gender == null || gender.isBlank()) return null;
         try {
             return Gender.valueOf(gender.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private MemberOccupation toMemberOccupation(String membershipType) {
+        if (membershipType == null || membershipType.isBlank()) return null;
+        try {
+            return MemberOccupation.valueOf(membershipType.toUpperCase());
         } catch (IllegalArgumentException e) {
             return null;
         }
