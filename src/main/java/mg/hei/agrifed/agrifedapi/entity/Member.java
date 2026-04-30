@@ -21,5 +21,6 @@ public class Member {
     private LocalDate membershipDate;
     private Boolean registrationFeePaid;
     private Boolean membershipDuesPaid;
+    private String membershipType;
     private String collectivityId;
 }
