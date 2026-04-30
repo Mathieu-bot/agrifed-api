@@ -24,23 +24,24 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             member.setId("mem-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
 
-        String sql = "INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid, membership_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, member.getId());
             stmt.setString(2, member.getLastName());
-            stmt.setDate(3, member.getBirthDate() != null ? Date.valueOf(member.getBirthDate()) : null);
-            stmt.setString(4, member.getGender());
-            stmt.setString(5, member.getAddress());
-            stmt.setString(6, member.getOccupation());
-            stmt.setString(7, member.getPhone());
-            stmt.setString(8, member.getEmail());
-            stmt.setDate(9, member.getMembershipDate() != null ? Date.valueOf(member.getMembershipDate()) : new Date(System.currentTimeMillis()));
-            stmt.setBoolean(10, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
-            stmt.setBoolean(11, member.getMembershipDuesPaid() != null ? member.getMembershipDuesPaid() : false);
-            stmt.setBoolean(12, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
+            stmt.setString(3, member.getFirstName());
+            stmt.setDate(4, member.getBirthDate() != null ? Date.valueOf(member.getBirthDate()) : null);
+            stmt.setString(5, member.getGender());
+            stmt.setString(6, member.getAddress());
+            stmt.setString(7, member.getOccupation());
+            stmt.setString(8, member.getPhone());
+            stmt.setString(9, member.getEmail());
+            stmt.setDate(10, member.getMembershipDate() != null ? Date.valueOf(member.getMembershipDate()) : new Date(System.currentTimeMillis()));
+            stmt.setBoolean(11, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
+            stmt.setBoolean(12, member.getMembershipDuesPaid() != null ? member.getMembershipDuesPaid() : false);
+            stmt.setString(13, member.getMembershipType());
 
             stmt.executeUpdate();
             return member;
@@ -52,7 +53,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Optional<Member> findById(String id) {
-        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid FROM member WHERE id = ?";
+        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid, membership_type FROM member WHERE id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -72,7 +73,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Optional<Member> findByEmail(String email) {
-        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid FROM member WHERE email = ?";
+        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid, membership_type FROM member WHERE email = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -92,7 +93,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public List<Member> findAll() {
-        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid FROM member";
+        String sql = "SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid, membership_type FROM member";
 
         List<Member> members = new ArrayList<>();
 
@@ -116,7 +117,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             return new ArrayList<>();
         }
 
-        StringBuilder sql = new StringBuilder("SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid FROM member WHERE id IN (");
+        StringBuilder sql = new StringBuilder("SELECT id, lastname, firstname, birth_date, gender, address, occupation, phone, email, membership_date, registration_fee_paid, membership_dues_paid, membership_type FROM member WHERE id IN (");
 
         for (int i = 0; i < ids.size(); i++) {
             sql.append(i > 0 ? ",?" : "?");
@@ -145,7 +146,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public Member update(Member member) {
-        String sql = "UPDATE member SET lastname = ?, firstname = ?, birth_date = ?, gender = ?, address = ?, occupation = ?, phone = ?, email = ?, membership_date = ?, registration_fee_paid = ?, membership_dues_paid = ? WHERE id = ?";
+        String sql = "UPDATE member SET lastname = ?, firstname = ?, birth_date = ?, gender = ?, address = ?, occupation = ?, phone = ?, email = ?, membership_date = ?, registration_fee_paid = ?, membership_dues_paid = ?, membership_type = ? WHERE id = ?";
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -161,7 +162,8 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
             stmt.setDate(9, member.getMembershipDate() != null ? Date.valueOf(member.getMembershipDate()) : null);
             stmt.setBoolean(10, member.getRegistrationFeePaid() != null ? member.getRegistrationFeePaid() : false);
             stmt.setBoolean(11, member.getMembershipDuesPaid() != null ? member.getMembershipDuesPaid() : false);
-            stmt.setString(12, member.getId());
+            stmt.setString(12, member.getMembershipType());
+            stmt.setString(13, member.getId());
 
             stmt.executeUpdate();
             return member;
@@ -188,7 +190,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
     @Override
     public List<Member> findByCollectivityId(String collectivityId) {
-        String sql = "SELECT m.id, m.lastname, m.firstname, m.birth_date, m.gender, m.address, m.occupation, m.phone, m.email, m.membership_date, m.registration_fee_paid, m.membership_dues_paid FROM member m INNER JOIN membership_history mh ON m.id = mh.member_id WHERE mh.collectivity_id = ?";
+        String sql = "SELECT m.id, m.lastname, m.firstname, m.birth_date, m.gender, m.address, m.occupation, m.phone, m.email, m.membership_date, m.registration_fee_paid, m.membership_dues_paid, m.membership_type FROM member m INNER JOIN membership_history mh ON m.id = mh.member_id WHERE mh.collectivity_id = ?";
 
         List<Member> members = new ArrayList<>();
 
@@ -234,6 +236,7 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
 
         member.setRegistrationFeePaid(rs.getBoolean("registration_fee_paid"));
         member.setMembershipDuesPaid(rs.getBoolean("membership_dues_paid"));
+        member.setMembershipType(rs.getString("membership_type"));
 
         return member;
     }
