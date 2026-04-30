@@ -78,6 +78,7 @@ public class MemberServiceImpl implements MemberService {
             entity.setMembershipDate(LocalDate.now());
             entity.setRegistrationFeePaid(dto.getRegistrationFeePaid());
             entity.setMembershipDuesPaid(dto.getMembershipDuesPaid());
+            entity.setMembershipType(dto.getOccupation() != null ? dto.getOccupation().name() : null);
 
             Member saved = memberRepository.save(entity);
 
