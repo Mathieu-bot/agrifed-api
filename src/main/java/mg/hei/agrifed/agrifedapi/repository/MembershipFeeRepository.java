@@ -9,6 +9,9 @@ public interface MembershipFeeRepository {
     MembershipFee save(MembershipFee fee);
     Optional<MembershipFee> findById(String id);
     List<MembershipFee> findByCollectivityId(String collectivityId);
+
+    List<MembershipFee> findActiveByCollectivityId(String collectivityId);
+
     MembershipFee update(MembershipFee fee);
     void delete(String id);
 }
