@@ -84,6 +84,8 @@ public class CollectivityTransactionServiceImpl implements CollectivityTransacti
         dto.setPhoneNumber(m.getPhone());
         dto.setAddress(m.getAddress());
         dto.setProfession(m.getOccupation());
+        dto.setBirthDate(String.valueOf(m.getBirthDate()));
+        dto.setGender(Gender.valueOf(m.getGender()));
         return dto;
     }
 }
