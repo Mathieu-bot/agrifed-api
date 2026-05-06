@@ -85,6 +85,56 @@ public class JdbcContributionRepositoryImpl implements ContributionRepository {
         }
     }
 
+    @Override
+    public BigDecimal sumByMemberAndCollectivityAndDateBetween(
+            String memberId, String collectivityId, LocalDate from, LocalDate to) {
+        String sql = """
+            SELECT COALESCE(SUM(amount), 0)
+            FROM contribution
+            WHERE member_id = ? AND collectivity_id = ?
+              AND collection_date BETWEEN ? AND ?
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, memberId);
+            stmt.setString(2, collectivityId);
+            stmt.setDate(3, Date.valueOf(from));
+            stmt.setDate(4, Date.valueOf(to));
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal(1);
+            }
+            return BigDecimal.ZERO;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to sum contributions by member and collectivity", e);
+        }
+    }
+
+    @Override
+    public BigDecimal sumByMemberAndFeeAndDateBetween(
+            String memberId, String membershipFeeId, LocalDate from, LocalDate to) {
+        String sql = """
+            SELECT COALESCE(SUM(amount), 0)
+            FROM contribution
+            WHERE member_id = ? AND membership_fee_id = ?
+              AND collection_date BETWEEN ? AND ?
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, memberId);
+            stmt.setString(2, membershipFeeId);
+            stmt.setDate(3, Date.valueOf(from));
+            stmt.setDate(4, Date.valueOf(to));
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBigDecimal(1);
+            }
+            return BigDecimal.ZERO;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to sum contributions by member and fee", e);
+        }
+    }
+
     private Contribution mapRow(ResultSet rs) throws SQLException {
         Contribution c = new Contribution();
         c.setId(rs.getString("id"));
