@@ -6,6 +6,7 @@ import mg.hei.agrifed.agrifedapi.exception.DatabaseException;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -259,6 +260,29 @@ public class JdbcCollectivityRepositoryImpl implements CollectivityRepository {
 
         } catch (SQLException e) {
             throw new DatabaseException("Failed to find collectivities by federation id", e);
+        }
+    }
+
+    @Override
+    public int countAdmissionsByCollectivityIdAndDateBetween(
+            String collectivityId, LocalDate from, LocalDate to) {
+        String sql = """
+            SELECT COUNT(id) FROM membership_history
+            WHERE collectivity_id = ? AND reason = 'ADMISSION'
+              AND start_date BETWEEN ? AND ?
+            """;
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, collectivityId);
+            stmt.setDate(2, Date.valueOf(from));
+            stmt.setDate(3, Date.valueOf(to));
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+            return 0;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to count admissions", e);
         }
     }
 

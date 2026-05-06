@@ -2,6 +2,7 @@ package mg.hei.agrifed.agrifedapi.repository;
 
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,7 @@ public interface CollectivityRepository {
     void deleteById(String id);
     List<Collectivity> findByStatus(String status);
     List<Collectivity> findByFederationId(String federationId);
+
+    int countAdmissionsByCollectivityIdAndDateBetween(
+        String collectivityId, LocalDate from, LocalDate to);
 }
