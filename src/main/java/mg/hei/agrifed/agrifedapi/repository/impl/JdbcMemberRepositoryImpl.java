@@ -210,6 +210,40 @@ public class JdbcMemberRepositoryImpl implements MemberRepository {
         }
     }
 
+    @Override
+    public List<Member> findActiveMembersByCollectivityId(String collectivityId) {
+        String sql = """
+            SELECT DISTINCT m.id, m.lastname, m.firstname, m.birth_date, m.gender,
+                   m.address, m.occupation, m.phone, m.email, m.membership_date,
+                   m.registration_fee_paid, m.membership_dues_paid, m.membership_type
+            FROM member m
+            INNER JOIN membership_history mh ON m.id = mh.member_id
+            WHERE mh.collectivity_id = ?
+              AND m.id NOT IN (
+                  SELECT member_id FROM membership_history
+                  WHERE collectivity_id = ? AND reason = 'RESIGNATION'
+              )
+            """;
+
+        List<Member> members = new ArrayList<>();
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, collectivityId);
+            stmt.setString(2, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                members.add(mapRowToMember(rs));
+            }
+            return members;
+
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find active members by collectivity id", e);
+        }
+    }
+
     private Member mapRowToMember(ResultSet rs) throws SQLException {
         Member member = new Member();
         member.setId(rs.getString("id"));
