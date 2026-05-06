@@ -62,4 +62,11 @@ public class ServiceConfig {
         return new MemberPaymentServiceImpl(
                 memberRepository, contributionRepository, transactionRepository, accountRepository);
     }
+
+    @Bean
+    public StatisticsService statisticsService(
+            StatisticsRepository statisticsRepository,
+            CollectivityRepository collectivityRepository) {
+        return new  StatisticsServiceImpl(statisticsRepository, collectivityRepository);
+    }
 }

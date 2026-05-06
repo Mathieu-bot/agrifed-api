@@ -48,4 +48,9 @@ public class RepositoryConfig {
     public SponsorshipRepository sponsorshipRepository(DataSource dataSource) {
         return new JdbcSponsorshipRepositoryImpl(dataSource);
     }
+
+    @Bean
+    public StatisticsRepository statisticsRepository(DataSource dataSource) {
+        return new JdbcStatisticsRepositoryImpl(dataSource);
+    }
 }
