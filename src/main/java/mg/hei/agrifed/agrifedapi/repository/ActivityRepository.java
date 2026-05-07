@@ -2,6 +2,7 @@ package mg.hei.agrifed.agrifedapi.repository;
 
 import mg.hei.agrifed.agrifedapi.entity.CollectivityActivity;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
