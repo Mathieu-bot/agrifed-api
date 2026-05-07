@@ -15,4 +15,6 @@ public interface MemberRepository {
     Member update(Member member);
     void deleteById(String id);
     List<Member> findByCollectivityId(String collectivityId);
+
+    List<Member> findActiveMembersByCollectivityId(String collectivityId);
 }

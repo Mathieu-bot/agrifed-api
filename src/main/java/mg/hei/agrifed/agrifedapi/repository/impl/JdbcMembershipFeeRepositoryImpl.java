@@ -37,6 +37,24 @@ public class JdbcMembershipFeeRepositoryImpl implements MembershipFeeRepository 
     }
 
     @Override
+    public List<MembershipFee> findActiveByCollectivityId(String collectivityId) {
+        String sql = "SELECT id, eligible_from, frequency, amount, label, status, collectivity_id " +
+                "FROM membership_fee WHERE collectivity_id = ? AND status = 'ACTIVE'";
+        List<MembershipFee> fees = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                fees.add(mapRow(rs));
+            }
+            return fees;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find active membership fees", e);
+        }
+    }
+
+    @Override
     public MembershipFee save(MembershipFee fee) {
         if (fee.getId() == null || fee.getId().isBlank()) {
             fee.setId("fee-" + java.util.UUID.randomUUID().toString().substring(0, 8));
