@@ -6,10 +6,14 @@ import mg.hei.agrifed.agrifedapi.dto.CollectivityLocalStatisticsDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityOverallStatisticsDto;
 import mg.hei.agrifed.agrifedapi.dto.MemberDescriptionDto;
 import mg.hei.agrifed.agrifedapi.dto.MemberOccupation;
+import mg.hei.agrifed.agrifedapi.entity.ActivityMemberAttendance;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
+import mg.hei.agrifed.agrifedapi.entity.CollectivityActivity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.entity.MembershipFee;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
+import mg.hei.agrifed.agrifedapi.repository.ActivityRepository;
+import mg.hei.agrifed.agrifedapi.repository.AttendanceRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.ContributionRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -18,10 +22,14 @@ import mg.hei.agrifed.agrifedapi.service.StatisticsService;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
@@ -30,6 +38,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final MembershipFeeRepository membershipFeeRepository;
     private final ContributionRepository contributionRepository;
     private final CollectivityRepository collectivityRepository;
+    private final ActivityRepository activityRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @Override
     public List<CollectivityLocalStatisticsDto> getLocalStatistics(
@@ -40,6 +50,10 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<Member> activeMembers = memberRepository.findActiveMembersByCollectivityId(collectivityId);
         List<MembershipFee> activeFees = membershipFeeRepository.findActiveByCollectivityId(collectivityId);
+        List<CollectivityActivity> activities = activityRepository.findAllByCollectivityId(collectivityId);
+
+        List<ActivityMemberAttendance> allAttendances = attendanceRepository.findAllByCollectivityId(collectivityId);
+        Map<String, Map<LocalDate, ActivityMemberAttendance>> attendanceByActivityAndDate = buildAttendanceMap(allAttendances);
 
         List<CollectivityLocalStatisticsDto> results = new ArrayList<>();
 
@@ -67,10 +81,14 @@ public class StatisticsServiceImpl implements StatisticsService {
                 }
             }
 
+            BigDecimal assiduityPercentage = calculateMemberAssiduity(
+                    member, activities, from, to, attendanceByActivityAndDate);
+
             CollectivityLocalStatisticsDto dto = new CollectivityLocalStatisticsDto();
             dto.setMemberDescription(toMemberDescription(member));
             dto.setEarnedAmount(earnedAmount);
             dto.setUnpaidAmount(unpaidAmount);
+            dto.setAssiduityPercentage(assiduityPercentage);
 
             results.add(dto);
         }
@@ -91,8 +109,15 @@ public class StatisticsServiceImpl implements StatisticsService {
                     .findActiveMembersByCollectivityId(collectivity.getId());
             List<MembershipFee> activeFees = membershipFeeRepository
                     .findActiveByCollectivityId(collectivity.getId());
+            List<CollectivityActivity> activities = activityRepository
+                    .findAllByCollectivityId(collectivity.getId());
+            List<ActivityMemberAttendance> allAttendances = attendanceRepository
+                    .findAllByCollectivityId(collectivity.getId());
+            Map<String, Map<LocalDate, ActivityMemberAttendance>> attendanceByActivityAndDate = buildAttendanceMap(allAttendances);
 
             int membersCurrent = 0;
+            BigDecimal totalAssiduity = BigDecimal.ZERO;
+
             for (Member member : activeMembers) {
                 boolean isCurrent = true;
                 for (MembershipFee fee : activeFees) {
@@ -111,6 +136,10 @@ public class StatisticsServiceImpl implements StatisticsService {
                 if (isCurrent) {
                     membersCurrent++;
                 }
+
+                BigDecimal memberAssiduity = calculateMemberAssiduity(
+                        member, activities, from, to, attendanceByActivityAndDate);
+                totalAssiduity = totalAssiduity.add(memberAssiduity);
             }
 
             BigDecimal percentage;
@@ -122,6 +151,14 @@ public class StatisticsServiceImpl implements StatisticsService {
                         .divide(BigDecimal.valueOf(activeMembers.size()), 2, RoundingMode.HALF_UP);
             }
 
+            BigDecimal overallAssiduity;
+            if (activeMembers.isEmpty()) {
+                overallAssiduity = BigDecimal.ZERO;
+            } else {
+                overallAssiduity = totalAssiduity
+                        .divide(BigDecimal.valueOf(activeMembers.size()), 2, RoundingMode.HALF_UP);
+            }
+
             CollectivityInformationDto info = new CollectivityInformationDto();
             info.setName(collectivity.getName());
             info.setNumber(collectivity.getNumber());
@@ -130,6 +167,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             dto.setCollectivityInformation(info);
             dto.setNewMembersNumber(newMembersNumber);
             dto.setOverallMemberCurrentDuePercentage(percentage);
+            dto.setOverallMemberAssiduityPercentage(overallAssiduity);
 
             results.add(dto);
         }
@@ -198,5 +236,108 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         return dto;
+    }
+
+    private Map<String, Map<LocalDate, ActivityMemberAttendance>> buildAttendanceMap(
+            List<ActivityMemberAttendance> allAttendances) {
+        return allAttendances.stream().collect(Collectors.groupingBy(
+                ActivityMemberAttendance::getActivityId,
+                Collectors.toMap(ActivityMemberAttendance::getOccurrenceDate, a -> a, (a, b) -> b)
+        ));
+    }
+
+    private List<LocalDate> expandRecurrence(CollectivityActivity activity, LocalDate from, LocalDate to) {
+        if (activity.getExecutiveDate() != null) {
+            if (!activity.getExecutiveDate().isBefore(from) && !activity.getExecutiveDate().isAfter(to)) {
+                return List.of(activity.getExecutiveDate());
+            }
+            return List.of();
+        }
+
+        if (activity.getRecurrenceWeekOrdinal() == null || activity.getRecurrenceDayOfWeek() == null) {
+            return List.of();
+        }
+
+        List<LocalDate> dates = new ArrayList<>();
+        LocalDate current = from.withDayOfMonth(1);
+        LocalDate end = to.withDayOfMonth(to.lengthOfMonth());
+
+        while (!current.isAfter(end)) {
+            DayOfWeek targetDay = parseDayOfWeek(activity.getRecurrenceDayOfWeek());
+            LocalDate firstOfMonth = current.withDayOfMonth(1);
+            LocalDate nthWeekDay = firstOfMonth.with(TemporalAdjusters.firstInMonth(targetDay))
+                    .plusWeeks(activity.getRecurrenceWeekOrdinal() - 1);
+
+            if (!nthWeekDay.isBefore(from) && !nthWeekDay.isAfter(to)) {
+                dates.add(nthWeekDay);
+            }
+
+            current = current.plusMonths(1);
+        }
+
+        return dates;
+    }
+
+    private DayOfWeek parseDayOfWeek(String code) {
+        return switch (code) {
+            case "MO" -> DayOfWeek.MONDAY;
+            case "TU" -> DayOfWeek.TUESDAY;
+            case "WE" -> DayOfWeek.WEDNESDAY;
+            case "TH" -> DayOfWeek.THURSDAY;
+            case "FR" -> DayOfWeek.FRIDAY;
+            case "SA" -> DayOfWeek.SATURDAY;
+            case "SU" -> DayOfWeek.SUNDAY;
+            default -> DayOfWeek.MONDAY;
+        };
+    }
+
+    private BigDecimal calculateMemberAssiduity(
+            Member member,
+            List<CollectivityActivity> activities,
+            LocalDate from,
+            LocalDate to,
+            Map<String, Map<LocalDate, ActivityMemberAttendance>> attendanceMap) {
+
+        if (activities.isEmpty()) {
+            return BigDecimal.valueOf(100);
+        }
+
+        long totalOccurrences = 0;
+        long attendedOccurrences = 0;
+
+        for (CollectivityActivity activity : activities) {
+            List<String> concerned = activity.getMemberOccupationConcerned();
+            if (concerned == null || concerned.isEmpty()) {
+                continue;
+            }
+            if (!concerned.contains(member.getMembershipType())) {
+                continue;
+            }
+
+            List<LocalDate> occurrences = expandRecurrence(activity, from, to);
+            if (occurrences.isEmpty()) {
+                continue;
+            }
+
+            totalOccurrences += occurrences.size();
+
+            Map<LocalDate, ActivityMemberAttendance> memberAttendances = attendanceMap
+                    .getOrDefault(activity.getId(), Map.of());
+
+            for (LocalDate occDate : occurrences) {
+                ActivityMemberAttendance attendance = memberAttendances.get(occDate);
+                if (attendance != null && "ATTENDED".equals(attendance.getStatus())) {
+                    attendedOccurrences++;
+                }
+            }
+        }
+
+        if (totalOccurrences == 0) {
+            return BigDecimal.valueOf(100);
+        }
+
+        return BigDecimal.valueOf(attendedOccurrences)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(totalOccurrences), 2, RoundingMode.HALF_UP);
     }
 }

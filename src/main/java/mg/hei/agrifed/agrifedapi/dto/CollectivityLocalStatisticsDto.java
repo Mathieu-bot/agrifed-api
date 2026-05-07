@@ -15,4 +15,5 @@ public class CollectivityLocalStatisticsDto {
     private MemberDescriptionDto memberDescription;
     private BigDecimal earnedAmount;
     private BigDecimal unpaidAmount;
+    private BigDecimal assiduityPercentage;
 }

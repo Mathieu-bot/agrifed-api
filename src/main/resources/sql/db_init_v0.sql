@@ -290,12 +290,14 @@ CREATE TABLE activity_occupation (
 -- ------------------------------------------------------------
 CREATE TABLE attendance (
                              id VARCHAR(20) PRIMARY KEY,
+                             occurrence_date DATE,
                              status VARCHAR(10) NOT NULL CHECK (status IN ('ATTENDED', 'MISSING', 'UNDEFINED')),
                              is_external BOOLEAN DEFAULT FALSE NOT NULL,
                              member_id VARCHAR(20) NOT NULL,
                              activity_id VARCHAR(20) NOT NULL,
                              CONSTRAINT attendance_member_FK FOREIGN KEY (member_id) REFERENCES member(id) ON DELETE CASCADE,
-                             CONSTRAINT attendance_activity_FK FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE
+                             CONSTRAINT attendance_activity_FK FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
+                             CONSTRAINT attendance_unique UNIQUE (activity_id, member_id, occurrence_date)
 );
 
 -- ------------------------------------------------------------
