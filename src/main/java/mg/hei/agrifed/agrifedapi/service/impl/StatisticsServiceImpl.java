@@ -6,10 +6,14 @@ import mg.hei.agrifed.agrifedapi.dto.CollectivityLocalStatisticsDto;
 import mg.hei.agrifed.agrifedapi.dto.CollectivityOverallStatisticsDto;
 import mg.hei.agrifed.agrifedapi.dto.MemberDescriptionDto;
 import mg.hei.agrifed.agrifedapi.dto.MemberOccupation;
+import mg.hei.agrifed.agrifedapi.entity.ActivityMemberAttendance;
 import mg.hei.agrifed.agrifedapi.entity.Collectivity;
+import mg.hei.agrifed.agrifedapi.entity.CollectivityActivity;
 import mg.hei.agrifed.agrifedapi.entity.Member;
 import mg.hei.agrifed.agrifedapi.entity.MembershipFee;
 import mg.hei.agrifed.agrifedapi.exception.NotFoundException;
+import mg.hei.agrifed.agrifedapi.repository.ActivityRepository;
+import mg.hei.agrifed.agrifedapi.repository.AttendanceRepository;
 import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.ContributionRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
@@ -22,6 +26,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class StatisticsServiceImpl implements StatisticsService {
@@ -30,6 +36,8 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final MembershipFeeRepository membershipFeeRepository;
     private final ContributionRepository contributionRepository;
     private final CollectivityRepository collectivityRepository;
+    private final ActivityRepository activityRepository;
+    private final AttendanceRepository attendanceRepository;
 
     @Override
     public List<CollectivityLocalStatisticsDto> getLocalStatistics(
@@ -40,6 +48,9 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<Member> activeMembers = memberRepository.findActiveMembersByCollectivityId(collectivityId);
         List<MembershipFee> activeFees = membershipFeeRepository.findActiveByCollectivityId(collectivityId);
+        List<CollectivityActivity> activities = activityRepository.findAllByCollectivityId(collectivityId);
+
+        List<ActivityMemberAttendance> allAttendances = attendanceRepository.findAllByActivityId(collectivityId);
 
         List<CollectivityLocalStatisticsDto> results = new ArrayList<>();
 
@@ -67,10 +78,13 @@ public class StatisticsServiceImpl implements StatisticsService {
                 }
             }
 
+            BigDecimal assiduityPercentage = calculateMemberAssiduity(member, activities, collectivityId);
+
             CollectivityLocalStatisticsDto dto = new CollectivityLocalStatisticsDto();
             dto.setMemberDescription(toMemberDescription(member));
             dto.setEarnedAmount(earnedAmount);
             dto.setUnpaidAmount(unpaidAmount);
+            dto.setAssiduityPercentage(assiduityPercentage);
 
             results.add(dto);
         }
@@ -93,6 +107,8 @@ public class StatisticsServiceImpl implements StatisticsService {
                     .findActiveByCollectivityId(collectivity.getId());
 
             int membersCurrent = 0;
+            BigDecimal totalAssiduity = BigDecimal.ZERO;
+
             for (Member member : activeMembers) {
                 boolean isCurrent = true;
                 for (MembershipFee fee : activeFees) {
@@ -111,6 +127,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                 if (isCurrent) {
                     membersCurrent++;
                 }
+
+                BigDecimal memberAssiduity = calculateMemberAssiduity(member, null, collectivity.getId());
+                totalAssiduity = totalAssiduity.add(memberAssiduity);
             }
 
             BigDecimal percentage;
@@ -122,6 +141,14 @@ public class StatisticsServiceImpl implements StatisticsService {
                         .divide(BigDecimal.valueOf(activeMembers.size()), 2, RoundingMode.HALF_UP);
             }
 
+            BigDecimal overallAssiduity;
+            if (activeMembers.isEmpty()) {
+                overallAssiduity = BigDecimal.ZERO;
+            } else {
+                overallAssiduity = totalAssiduity
+                        .divide(BigDecimal.valueOf(activeMembers.size()), 2, RoundingMode.HALF_UP);
+            }
+
             CollectivityInformationDto info = new CollectivityInformationDto();
             info.setName(collectivity.getName());
             info.setNumber(collectivity.getNumber());
@@ -130,6 +157,7 @@ public class StatisticsServiceImpl implements StatisticsService {
             dto.setCollectivityInformation(info);
             dto.setNewMembersNumber(newMembersNumber);
             dto.setOverallMemberCurrentDuePercentage(percentage);
+            dto.setOverallMemberAssiduityPercentage(overallAssiduity);
 
             results.add(dto);
         }
@@ -198,5 +226,46 @@ public class StatisticsServiceImpl implements StatisticsService {
         }
 
         return dto;
+    }
+
+    private BigDecimal calculateMemberAssiduity(Member member, List<CollectivityActivity> activities, String collectivityId) {
+        if (activities == null) {
+            activities = activityRepository.findAllByCollectivityId(collectivityId);
+        }
+
+        if (activities.isEmpty()) {
+            return BigDecimal.valueOf(100);
+        }
+
+        List<String> concernedOccupations = activities.stream()
+                .filter(a -> a.getMemberOccupationConcerned() != null && !a.getMemberOccupationConcerned().isEmpty())
+                .filter(a -> a.getMemberOccupationConcerned().contains(member.getMembershipType()))
+                .map(CollectivityActivity::getId)
+                .collect(Collectors.toList());
+
+        if (concernedOccupations.isEmpty()) {
+            return BigDecimal.valueOf(100);
+        }
+
+        Map<String, ActivityMemberAttendance> attendanceByActivityId = attendanceRepository
+                .findAllByActivityId(collectivityId)
+                .stream()
+                .filter(a -> a.getMemberId().equals(member.getId()))
+                .collect(Collectors.toMap(ActivityMemberAttendance::getActivityId, a -> a));
+
+        long attended = concernedOccupations.stream()
+                .filter(activityId -> {
+                    ActivityMemberAttendance attendance = attendanceByActivityId.get(activityId);
+                    return attendance != null && "ATTENDED".equals(attendance.getStatus());
+                })
+                .count();
+
+        if (concernedOccupations.isEmpty()) {
+            return BigDecimal.valueOf(100);
+        }
+
+        return BigDecimal.valueOf(attended)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(concernedOccupations.size()), 2, RoundingMode.HALF_UP);
     }
 }
