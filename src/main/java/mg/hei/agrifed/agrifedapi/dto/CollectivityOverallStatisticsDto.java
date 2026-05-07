@@ -15,4 +15,5 @@ public class CollectivityOverallStatisticsDto {
     private CollectivityInformationDto collectivityInformation;
     private Integer newMembersNumber;
     private BigDecimal overallMemberCurrentDuePercentage;
+    private BigDecimal overallMemberAssiduityPercentage;
 }
