@@ -24,6 +24,7 @@ DROP TABLE IF EXISTS position CASCADE;
 DROP TABLE IF EXISTS collectivity CASCADE;
 DROP TABLE IF EXISTS member CASCADE;
 DROP TABLE IF EXISTS federation CASCADE;
+DROP TABLE IF EXISTS collectivity_occupation CASCADE;
 DROP TABLE IF EXISTS activity_occupation CASCADE;
 
 -- ------------------------------------------------------------
