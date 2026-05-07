@@ -13,6 +13,9 @@ import mg.hei.agrifed.agrifedapi.repository.CollectivityRepository;
 import mg.hei.agrifed.agrifedapi.repository.MemberRepository;
 import mg.hei.agrifed.agrifedapi.service.ActivityService;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,6 +72,8 @@ public class ActivityServiceImpl implements ActivityService {
         CollectivityActivity activity = activityRepository.findByIdAndCollectivityId(activityId, collectivityId)
                 .orElseThrow(() -> new ActivityNotFoundException("Activity not found: " + activityId));
 
+        LocalDate occurrenceDate = deriveOccurrenceDate(activity);
+
         List<ActivityMemberAttendanceDto> result = new ArrayList<>();
         for (CreateActivityMemberAttendanceDto dto : dtos) {
             if (dto.getMemberIdentifier() == null || dto.getMemberIdentifier().isBlank()) {
@@ -78,12 +83,10 @@ public class ActivityServiceImpl implements ActivityService {
                 throw BadRequestException.missingRequiredField("attendanceStatus");
             }
 
-            Optional<ActivityMemberAttendance> existing = attendanceRepository.findByActivityIdAndMemberId(activityId, dto.getMemberIdentifier());
-            if (existing.isPresent()) {
-                String currentStatus = existing.get().getStatus();
-                if ("ATTENDED".equals(currentStatus) || "MISSING".equals(currentStatus)) {
-                    throw new BadRequestException("Attendance already confirmed for member " + dto.getMemberIdentifier());
-                }
+            List<String> confirmedStatuses = List.of("ATTENDED", "MISSING");
+            boolean alreadyConfirmed = attendanceRepository.existsByActivityIdAndMemberIdAndStatusIn(activityId, dto.getMemberIdentifier(), confirmedStatuses);
+            if (alreadyConfirmed) {
+                throw new BadRequestException("Attendance already confirmed for member " + dto.getMemberIdentifier());
             }
 
             Member member = memberRepository.findById(dto.getMemberIdentifier())
@@ -94,6 +97,7 @@ public class ActivityServiceImpl implements ActivityService {
             ActivityMemberAttendance attendance = new ActivityMemberAttendance();
             attendance.setMemberId(member.getId());
             attendance.setActivityId(activityId);
+            attendance.setOccurrenceDate(occurrenceDate);
             attendance.setStatus(dto.getAttendanceStatus());
             attendance.setIsExternal(isExternal);
 
@@ -158,6 +162,44 @@ public class ActivityServiceImpl implements ActivityService {
         }
 
         return result;
+    }
+
+    private LocalDate deriveOccurrenceDate(CollectivityActivity activity) {
+        if (activity.getExecutiveDate() != null) {
+            return activity.getExecutiveDate();
+        }
+
+        if (activity.getRecurrenceWeekOrdinal() == null || activity.getRecurrenceDayOfWeek() == null) {
+            throw new BadRequestException("Activity must have either executive date or recurrence rule");
+        }
+
+        DayOfWeek targetDay = parseDayOfWeek(activity.getRecurrenceDayOfWeek());
+        LocalDate today = LocalDate.now();
+        LocalDate firstOfMonth = today.withDayOfMonth(1);
+        LocalDate nthWeekDay = firstOfMonth.with(TemporalAdjusters.firstInMonth(targetDay))
+                .plusWeeks(activity.getRecurrenceWeekOrdinal() - 1);
+
+        if (!nthWeekDay.isAfter(today)) {
+            return nthWeekDay;
+        }
+
+        LocalDate prevMonth = firstOfMonth.minusMonths(1);
+        nthWeekDay = prevMonth.with(TemporalAdjusters.firstInMonth(targetDay))
+                .plusWeeks(activity.getRecurrenceWeekOrdinal() - 1);
+        return nthWeekDay;
+    }
+
+    private DayOfWeek parseDayOfWeek(String code) {
+        return switch (code) {
+            case "MO" -> DayOfWeek.MONDAY;
+            case "TU" -> DayOfWeek.TUESDAY;
+            case "WE" -> DayOfWeek.WEDNESDAY;
+            case "TH" -> DayOfWeek.THURSDAY;
+            case "FR" -> DayOfWeek.FRIDAY;
+            case "SA" -> DayOfWeek.SATURDAY;
+            case "SU" -> DayOfWeek.SUNDAY;
+            default -> DayOfWeek.MONDAY;
+        };
     }
 
     private void validateActivity(CreateCollectivityActivityDto dto) {
