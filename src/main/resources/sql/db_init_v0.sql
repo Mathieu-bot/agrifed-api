@@ -252,20 +252,36 @@ CREATE TABLE "transaction" (
 -- ------------------------------------------------------------
 CREATE TABLE activity (
                            id VARCHAR(20) PRIMARY KEY,
-                           name VARCHAR(100) NOT NULL,
-                           type VARCHAR(30) NOT NULL CHECK (type IN ('GENERAL_MEETING', 'JUNIOR_TRAINING', 'EXCEPTIONAL')),
-                           activity_date DATE NOT NULL,
-                           is_mandatory BOOLEAN DEFAULT FALSE NOT NULL,
-                           target VARCHAR(10) NOT NULL CHECK (target IN ('ALL', 'JUNIORS')),
+                           label VARCHAR(100) NOT NULL,
+                           activity_type VARCHAR(20) NOT NULL CHECK (activity_type IN ('MEETING', 'TRAINING', 'OTHER')),
+                           executive_date DATE,
+                           recurrence_week_ordinal INT CHECK (recurrence_week_ordinal BETWEEN 1 AND 5),
+                           recurrence_day_of_week VARCHAR(2) CHECK (recurrence_day_of_week IN ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU')),
                            collectivity_id VARCHAR(20),
                            federation_id VARCHAR(20),
                            CHECK (
                                (collectivity_id IS NOT NULL AND federation_id IS NULL)
                                    OR
                                (collectivity_id IS NULL AND federation_id IS NOT NULL)
-                               ),
+                           ),
+                           CHECK (
+                               (executive_date IS NOT NULL AND recurrence_week_ordinal IS NULL AND recurrence_day_of_week IS NULL)
+                                   OR
+                               (executive_date IS NULL AND recurrence_week_ordinal IS NOT NULL AND recurrence_day_of_week IS NOT NULL)
+                           ),
                            CONSTRAINT activity_collectivity_FK FOREIGN KEY (collectivity_id) REFERENCES collectivity(id) ON DELETE CASCADE,
                            CONSTRAINT activity_federation_FK FOREIGN KEY (federation_id) REFERENCES federation(id) ON DELETE CASCADE
+);
+
+-- ------------------------------------------------------------
+-- Table: activity_occupation
+-- Description: Occupations concerned by an activity
+-- ------------------------------------------------------------
+CREATE TABLE activity_occupation (
+                                     activity_id VARCHAR(20),
+                                     occupation VARCHAR(20) NOT NULL CHECK (occupation IN ('JUNIOR', 'SENIOR', 'SECRETARY', 'TREASURER', 'VICE_PRESIDENT', 'PRESIDENT')),
+                                     PRIMARY KEY (activity_id, occupation),
+                                     CONSTRAINT activity_occupation_activity_FK FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE
 );
 
 -- ------------------------------------------------------------
@@ -274,9 +290,7 @@ CREATE TABLE activity (
 -- ------------------------------------------------------------
 CREATE TABLE attendance (
                              id VARCHAR(20) PRIMARY KEY,
-                             attendance_date DATE NOT NULL,
-                             status VARCHAR(10) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT', 'EXCUSED')),
-                             absence_reason VARCHAR(255),
+                             status VARCHAR(10) NOT NULL CHECK (status IN ('ATTENDED', 'MISSING', 'UNDEFINED')),
                              is_external BOOLEAN DEFAULT FALSE NOT NULL,
                              member_id VARCHAR(20) NOT NULL,
                              activity_id VARCHAR(20) NOT NULL,
@@ -299,7 +313,7 @@ CREATE INDEX idx_account_collectivity ON account(collectivity_id);
 CREATE INDEX idx_account_federation ON account(federation_id);
 CREATE INDEX idx_activity_collectivity ON activity(collectivity_id);
 CREATE INDEX idx_activity_federation ON activity(federation_id);
-CREATE INDEX idx_activity_date ON activity(activity_date);
+CREATE INDEX idx_activity_executive_date ON activity(executive_date);
 CREATE INDEX idx_collectivity_status ON collectivity(status);
 
 -- ============================================================

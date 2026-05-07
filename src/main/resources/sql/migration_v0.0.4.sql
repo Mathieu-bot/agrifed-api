@@ -50,16 +50,7 @@ UPDATE account_mobile SET service_name = UPPER(service_name) WHERE service_name 
 -- ------------------------------------------------------------
 UPDATE membership_history SET reason = UPPER(reason) WHERE reason IS NOT NULL AND reason ~ '^[a-z]';
 
--- ------------------------------------------------------------
--- Update activity.type to uppercase
--- ------------------------------------------------------------
-UPDATE activity SET type = UPPER(type) WHERE type IS NOT NULL AND type ~ '^[a-z]';
--- Note: Use underscore format: GENERAL_MEETING, JUNIOR_TRAINING, EXCEPTIONAL
-
--- ------------------------------------------------------------
--- Update attendance.status to uppercase
--- ------------------------------------------------------------
-UPDATE attendance SET status = UPPER(status) WHERE status IS NOT NULL AND status ~ '^[a-z]';
+-- activity type and attendance status enums updated in v0.0.6 schema redesign
 
 -- ------------------------------------------------------------
 -- Allow collectivity_id to be nullable in contribution (for payments)
