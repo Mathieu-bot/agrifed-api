@@ -260,7 +260,7 @@ public class ActivityServiceImpl implements ActivityService {
         desc.setLastName(member.getLastName());
         desc.setEmail(member.getEmail());
         if (member.getOccupation() != null) {
-            desc.setOccupation(MemberOccupation.valueOf(member.getOccupation()));
+            desc.setOccupation(MemberOccupation.valueOf(member.getMembershipType()));
         }
         dto.setMemberDescription(desc);
 
