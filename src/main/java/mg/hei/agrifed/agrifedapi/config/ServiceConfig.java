@@ -72,4 +72,14 @@ public class ServiceConfig {
         return new StatisticsServiceImpl(
                 memberRepository, membershipFeeRepository, contributionRepository, collectivityRepository);
     }
+
+    @Bean
+    public ActivityService activityService(
+            ActivityRepository activityRepository,
+            AttendanceRepository attendanceRepository,
+            MemberRepository memberRepository,
+            CollectivityRepository collectivityRepository) {
+        return new ActivityServiceImpl(
+                activityRepository, attendanceRepository, memberRepository, collectivityRepository);
+    }
 }
