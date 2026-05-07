@@ -20,7 +20,7 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
 
     @Override
     public List<ActivityMemberAttendance> findAllByActivityId(String activityId) {
-        String sql = "SELECT id, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ?";
+        String sql = "SELECT id, occurrence_date, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ?";
         List<ActivityMemberAttendance> attendances = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -37,7 +37,7 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
 
     @Override
     public Optional<ActivityMemberAttendance> findByActivityIdAndMemberId(String activityId, String memberId) {
-        String sql = "SELECT id, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ? AND member_id = ?";
+        String sql = "SELECT id, occurrence_date, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ? AND member_id = ? ORDER BY occurrence_date DESC LIMIT 1";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, activityId);
@@ -52,7 +52,7 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
 
     @Override
     public List<ActivityMemberAttendance> findAllByActivityIdAndIsExternal(String activityId, boolean isExternal) {
-        String sql = "SELECT id, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ? AND is_external = ?";
+        String sql = "SELECT id, occurrence_date, status, is_external, member_id, activity_id FROM attendance WHERE activity_id = ? AND is_external = ?";
         List<ActivityMemberAttendance> attendances = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -69,18 +69,39 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
     }
 
     @Override
+    public List<ActivityMemberAttendance> findAllByCollectivityId(String collectivityId) {
+        String sql = "SELECT at.id, at.occurrence_date, at.status, at.is_external, at.member_id, at.activity_id " +
+                "FROM attendance at " +
+                "INNER JOIN activity a ON at.activity_id = a.id " +
+                "WHERE a.collectivity_id = ?";
+        List<ActivityMemberAttendance> attendances = new ArrayList<>();
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, collectivityId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                attendances.add(mapRow(rs));
+            }
+            return attendances;
+        } catch (SQLException e) {
+            throw new DatabaseException("Failed to find attendances by collectivity id", e);
+        }
+    }
+
+    @Override
     public ActivityMemberAttendance save(ActivityMemberAttendance attendance) {
         if (attendance.getId() == null || attendance.getId().isBlank()) {
             attendance.setId("att-" + java.util.UUID.randomUUID().toString().substring(0, 8));
         }
-        String sql = "INSERT INTO attendance (id, status, is_external, member_id, activity_id) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO attendance (id, occurrence_date, status, is_external, member_id, activity_id) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, attendance.getId());
-            stmt.setString(2, attendance.getStatus());
-            stmt.setBoolean(3, attendance.getIsExternal() != null && attendance.getIsExternal());
-            stmt.setString(4, attendance.getMemberId());
-            stmt.setString(5, attendance.getActivityId());
+            stmt.setDate(2, attendance.getOccurrenceDate() != null ? Date.valueOf(attendance.getOccurrenceDate()) : null);
+            stmt.setString(3, attendance.getStatus());
+            stmt.setBoolean(4, attendance.getIsExternal() != null && attendance.getIsExternal());
+            stmt.setString(5, attendance.getMemberId());
+            stmt.setString(6, attendance.getActivityId());
             stmt.executeUpdate();
             return attendance;
         } catch (SQLException e) {
@@ -97,12 +118,20 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
     }
 
     @Override
-    public boolean existsByActivityIdAndMemberId(String activityId, String memberId) {
-        String sql = "SELECT COUNT(id) FROM attendance WHERE activity_id = ? AND member_id = ?";
+    public boolean existsByActivityIdAndMemberIdAndStatusIn(String activityId, String memberId, List<String> statuses) {
+        if (statuses == null || statuses.isEmpty()) return false;
+        StringBuilder sql = new StringBuilder("SELECT COUNT(id) FROM attendance WHERE activity_id = ? AND member_id = ? AND status IN (");
+        for (int i = 0; i < statuses.size(); i++) {
+            sql.append(i > 0 ? ",?" : "?");
+        }
+        sql.append(")");
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
             stmt.setString(1, activityId);
             stmt.setString(2, memberId);
+            for (int i = 0; i < statuses.size(); i++) {
+                stmt.setString(i + 3, statuses.get(i));
+            }
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) return rs.getInt(1) > 0;
             return false;
@@ -114,6 +143,8 @@ public class JdbcAttendanceRepositoryImpl implements AttendanceRepository {
     private ActivityMemberAttendance mapRow(ResultSet rs) throws SQLException {
         ActivityMemberAttendance a = new ActivityMemberAttendance();
         a.setId(rs.getString("id"));
+        Date occDate = rs.getDate("occurrence_date");
+        a.setOccurrenceDate(occDate != null ? occDate.toLocalDate() : null);
         a.setStatus(rs.getString("status"));
         a.setIsExternal(rs.getBoolean("is_external"));
         a.setMemberId(rs.getString("member_id"));
