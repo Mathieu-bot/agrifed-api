@@ -1,437 +1,586 @@
 -- ============================================================
--- Seed: Données de test - TD Final 6 Mai 2026
--- Source: PDF pages 24-29
--- Prérequis OBLIGATOIRES (dans cet ordre) :
---   1. db_init_v0.sql
---   2. migration_V0_0_1.sql
---   3. migration_v0_0_3.sql
---   4. migration_v0_0_4.sql
---   5. migration_v0_0_5.sql
---   6. migration_v0_0_6_mai2026.sql  (ajout relationship dans sponsorship)
---   7. seed_test_data.sql MODIFIÉ    (voir NOTE ci-dessous)
---   8. CE FICHIER
+-- Seed : Données de test - TD Final 6 Mai 2026
+-- Source : PDF pages 24-29
+-- Basé sur : db_init_v0.sql + migrations V0.0.1 → V0.0.6
 -- ============================================================
--- NOTE CRITIQUE sur seed_test_data.sql existant :
---   Le fichier seed_test_data.sql N'INSÈRE PAS membership_type dans member,
---   or la migration V0.0.5 rend cette colonne NOT NULL.
---   Il faut donc ajouter membership_type à chaque INSERT INTO member dans
---   seed_test_data.sql, OU exécuter l'UPDATE ci-dessous juste après seed_test_data.sql.
---   Ce seed le fait automatiquement en ÉTAPE 0.
--- ============================================================
--- DIVERGENCES STRUCTURE BD vs DONNÉES DE TEST (toutes corrigées ici) :
---
---  [1] member.membership_type (V0.0.5) NOT NULL mais absent du seed initial
---      → ÉTAPE 0 : UPDATE pour assigner le bon type selon le rôle tenu
---      Mapping : PRESIDENT→PRESIDENT, VICE_PRESIDENT→VICE_PRESIDENT,
---                TREASURER→TREASURER, SECRETARY→SECRETARY,
---                CONFIRMED_MEMBER→SENIOR, JUNIOR_MEMBER→JUNIOR
---
---  [2] account.type CHECK IN ('cash','bank','mobile_money') — MINUSCULES
---      → On insère 'bank' et 'mobile_money', PAS 'BANK' / 'MVOLA'
---
---  [3] account_extended.account_number VARCHAR(23) = BBBBBGGGGGCCCCCCCCCCCKKK
---      Le PDF donne 10 chiffres pour le numéro de compte, mais le format
---      exige 11 chiffres (CCCCCCCCCCC). On complète à 11 chiffres par
---      zero-padding à gauche pour respecter la contrainte VARCHAR(23).
---      BMOI : 00004 + 00001 + 12345678901 + 12 = 23 chars
---      BRED : 00008 + 00003 + 45678901234 + 58 = 23 chars
---      bank_code et branch_code stockés séparément (ajoutés par V0.0.3).
---
---  [4] contribution.type CHECK (V0.0.3) : 'ANNUALLY' (pas 'ANNUAL'),
---      'MONTHLY', 'PUNCTUALLY' → valeurs utilisées en cohérence
---
---  [5] membership_fee et collectivity_structure n'existent que post-migrations
---      V0.0.3 et V0.0.1 → déjà géré par seed_test_data.sql
---
---  [6] membership_date des anciens membres : ajustée à '2026-01-01' (page 27)
+-- INSTRUCTIONS :
+--   1. Exécuter db_init_v0.sql (DDL) avant ce fichier
+--   2. Exécuter toutes les migrations (V0.0.1 → V0.0.6) avant ce fichier
+--   3. Ce fichier repart de zéro : TRUNCATE complet puis réinsertion
 -- ============================================================
 
 -- ============================================================
--- ÉTAPE 0 : Corrections sur les données déjà insérées
+-- 0. NETTOYAGE COMPLET (ordre inverse des dépendances FK)
 -- ============================================================
-
--- 0a. Assigner membership_type aux anciens membres (manquant dans seed initial)
---     Basé sur leur rôle dans collectivity_term pour 2026
-UPDATE member SET membership_type = 'PRESIDENT'       WHERE id = 'C1-M1';  -- président col-1
-UPDATE member SET membership_type = 'VICE_PRESIDENT'  WHERE id = 'C1-M2';  -- vice-président col-1
-UPDATE member SET membership_type = 'SECRETARY'       WHERE id = 'C1-M3';  -- secrétaire col-1
-UPDATE member SET membership_type = 'TREASURER'       WHERE id = 'C1-M4';  -- trésorier col-1
-UPDATE member SET membership_type = 'PRESIDENT'       WHERE id = 'C1-M5';  -- président col-2
-UPDATE member SET membership_type = 'VICE_PRESIDENT'  WHERE id = 'C1-M6';  -- vice-président col-2
-UPDATE member SET membership_type = 'SECRETARY'       WHERE id = 'C1-M7';  -- secrétaire col-2
-UPDATE member SET membership_type = 'TREASURER'       WHERE id = 'C1-M8';  -- trésorier col-2
-UPDATE member SET membership_type = 'PRESIDENT'       WHERE id = 'C3-M1';  -- président col-3
-UPDATE member SET membership_type = 'VICE_PRESIDENT'  WHERE id = 'C3-M2';  -- vice-président col-3
-UPDATE member SET membership_type = 'SECRETARY'       WHERE id = 'C3-M3';  -- secrétaire col-3
-UPDATE member SET membership_type = 'TREASURER'       WHERE id = 'C3-M4';  -- trésorier col-3
--- Membres confirmés (CONFIRMED_MEMBER dans context) → SENIOR dans membership_type
-UPDATE member SET membership_type = 'SENIOR' WHERE id IN ('C1-M5','C1-M6','C1-M7','C1-M8',
-                                                           'C3-M5','C3-M6','C3-M7','C3-M8');
--- Note : C1-M5 est PRESIDENT dans col-2 ET CONFIRMED dans col-1.
--- Un membre ne peut avoir qu'un membership_type. On prend son rôle le plus élevé.
--- C1-M5 → PRESIDENT, C1-M6 → VICE_PRESIDENT, C1-M7 → SECRETARY, C1-M8 → TREASURER
--- (les UPDATE SENIOR ci-dessus sont écrasés pour ces membres, ordre important)
--- Relancer les UPDATE de rôle spécifique après le SENIOR pour les membres bi-collectivité :
-UPDATE member SET membership_type = 'PRESIDENT'      WHERE id = 'C1-M5';
-UPDATE member SET membership_type = 'VICE_PRESIDENT' WHERE id = 'C1-M6';
-UPDATE member SET membership_type = 'SECRETARY'      WHERE id = 'C1-M7';
-UPDATE member SET membership_type = 'TREASURER'      WHERE id = 'C1-M8';
-
--- 0b. Ajuster membership_date de tous les anciens membres à 2026-01-01 (page 27)
-UPDATE member SET membership_date = '2026-01-01'
-WHERE id IN ('C1-M1','C1-M2','C1-M3','C1-M4','C1-M5','C1-M6','C1-M7','C1-M8',
-             'C3-M1','C3-M2','C3-M3','C3-M4','C3-M5','C3-M6','C3-M7','C3-M8');
-
--- 0c. Ajuster start_date dans membership_history en cohérence
-UPDATE membership_history SET start_date = '2026-01-01'
-WHERE member_id IN ('C1-M1','C1-M2','C1-M3','C1-M4','C1-M5','C1-M6','C1-M7','C1-M8',
-                    'C3-M1','C3-M2','C3-M3','C3-M4','C3-M5','C3-M6','C3-M7','C3-M8');
-
--- 0d. Supprimer les anciennes cotisations (cot-1, cot-2, cot-3 du seed initial)
---     membership_fee_id dans contribution passera à NULL via ON DELETE SET NULL (V0.0.3)
-DELETE FROM membership_fee WHERE id IN ('cot-1', 'cot-2', 'cot-3');
+TRUNCATE TABLE attendance              CASCADE;
+TRUNCATE TABLE activity                CASCADE;
+TRUNCATE TABLE "transaction"           CASCADE;
+TRUNCATE TABLE account_mobile          CASCADE;
+TRUNCATE TABLE account_extended        CASCADE;
+TRUNCATE TABLE account                 CASCADE;
+TRUNCATE TABLE contribution            CASCADE;
+TRUNCATE TABLE membership_fee          CASCADE;
+TRUNCATE TABLE sponsorship             CASCADE;
+TRUNCATE TABLE collectivity_term       CASCADE;
+TRUNCATE TABLE collectivity_vote       CASCADE;
+TRUNCATE TABLE collectivity_structure  CASCADE;
+TRUNCATE TABLE membership_history      CASCADE;
+TRUNCATE TABLE collectivity            CASCADE;
+TRUNCATE TABLE federation_term         CASCADE;
+TRUNCATE TABLE federation_vote         CASCADE;
+TRUNCATE TABLE position                CASCADE;
+TRUNCATE TABLE member                  CASCADE;
+TRUNCATE TABLE federation              CASCADE;
 
 -- ============================================================
--- 1. NOUVEAUX COMPTES FINANCIERS - Collectivité 3 (page 24)
+-- 1. FEDERATION
+-- ============================================================
+INSERT INTO federation (id, name)
+VALUES ('fed-1', 'Fédération de collectivités agricoles');
+
+-- ============================================================
+-- 2. POSITIONS (référentiel complet)
+-- ============================================================
+INSERT INTO position (id, label, context)
+VALUES
+    ('pos-president',        'PRESIDENT',        'BOTH'),
+    ('pos-vice-president',   'VICE_PRESIDENT',   'BOTH'),
+    ('pos-treasurer',        'TREASURER',        'BOTH'),
+    ('pos-secretary',        'SECRETARY',        'BOTH'),
+    ('pos-confirmed-member', 'CONFIRMED_MEMBER', 'COLLECTIVITY'),
+    ('pos-junior-member',    'JUNIOR_MEMBER',    'COLLECTIVITY');
+
+-- ============================================================
+-- 3. COLLECTIVITES (Tableau 1, page 14)
+-- ============================================================
+INSERT INTO collectivity (id, number, name, specialty, city, creation_date, federation_id,
+                          status, location, federation_approval)
+VALUES
+    ('col-1', '1', 'Mpanorina',      'Riziculture', 'Ambatondrazaka', '2020-01-01', 'fed-1', 'APPROVED', 'Ambatondrazaka', TRUE),
+    ('col-2', '2', 'Dobo voalohany', 'Pisciculture', 'Ambatondrazaka', '2020-01-01', 'fed-1', 'APPROVED', 'Ambatondrazaka', TRUE),
+    ('col-3', '3', 'Tantely mamy',   'Apiculture',   'Brickaville',   '2020-01-01', 'fed-1', 'APPROVED', 'Brickaville',   TRUE);
+
+-- ============================================================
+-- 4. MEMBRES (Tableaux 2, 3 et 4 — pages 15-17)
+-- membership_date = 01/01/2026 pour TOUS les anciens membres (consigne page 27)
+-- membership_type ajouté par migration V0.0.5
 -- ============================================================
 
--- 1a. Deux comptes bancaires pour col-3
---     account.type CHECK : 'cash' | 'bank' | 'mobile_money'  (MINUSCULES)
+-- Membres partagés col-1 & col-2 (C1-M1 à C1-M8)
+INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation,
+                    phone, email, membership_date,
+                    registration_fee_paid, membership_dues_paid, membership_type)
+VALUES
+    ('C1-M1', 'Nom membre 1',  'Prénom membre 1',  '1980-02-01', 'MALE',   'Lot II V M Ambato.',  'Riziculteur',  '0341234567', 'member.1@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'PRESIDENT'),
+    ('C1-M2', 'Nom membre 2',  'Prénom membre 2',  '1982-03-05', 'MALE',   'Lot II F Ambato.',    'Agriculteur',  '0321234567', 'member.2@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'VICE_PRESIDENT'),
+    ('C1-M3', 'Nom membre 3',  'Prénom membre 3',  '1992-03-10', 'MALE',   'Lot II J Ambato.',    'Collecteur',   '0331234567', 'member.3@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'SECRETARY'),
+    ('C1-M4', 'Nom membre 4',  'Prénom membre 4',  '1988-05-22', 'FEMALE', 'Lot A K 50 Ambato.',  'Distributeur', '0381234567', 'member.4@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'TREASURER'),
+    ('C1-M5', 'Nom membre 5',  'Prénom membre 5',  '1999-08-21', 'MALE',   'Lot UV 80 Ambato.',   'Riziculteur',  '0373434567', 'member.5@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'PRESIDENT'),
+    ('C1-M6', 'Nom membre 6',  'Prénom membre 6',  '1998-08-22', 'FEMALE', 'Lot UV 6 Ambato.',    'Riziculteur',  '0372234567', 'member.6@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'VICE_PRESIDENT'),
+    ('C1-M7', 'Nom membre 7',  'Prénom membre 7',  '1998-01-31', 'MALE',   'Lot UV 7 Ambato.',    'Riziculteur',  '0374234567', 'member.7@fed-agri.mg',  '2026-01-01', TRUE, FALSE, 'SECRETARY'),
+    ('C1-M8', 'Nom membre 8',  'Prénom membre 8',  '1975-08-20', 'MALE',   'Lot UV 8 Ambato.',    'Riziculteur',  '0370234567', 'member.8@fed-agri.mg',  '2026-01-01', TRUE, FALSE, 'TREASURER');
+
+-- Membres col-3 (C3-M1 à C3-M8)
+INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation,
+                    phone, email, membership_date,
+                    registration_fee_paid, membership_dues_paid, membership_type)
+VALUES
+    ('C3-M1', 'Nom membre 9',  'Prénom membre 9',  '1988-01-02', 'MALE',   'Lot 33 J Antsirabe',   'Apiculteur',   '034034567',  'member.9@fed-agri.mg',  '2026-01-01', TRUE, TRUE,  'PRESIDENT'),
+    ('C3-M2', 'Nom membre 10', 'Prénom membre 10', '1982-03-05', 'MALE',   'Lot 2 J Antsirabe',    'Agriculteur',  '0338634567', 'member.10@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'VICE_PRESIDENT'),
+    ('C3-M3', 'Nom membre 11', 'Prénom membre 11', '1992-03-12', 'MALE',   'Lot 8 KM Antsirabe',   'Collecteur',   '0338234567', 'member.11@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'SECRETARY'),
+    ('C3-M4', 'Nom membre 12', 'Prénom membre 12', '1988-05-10', 'FEMALE', 'Lot A K 50 Antsirabe', 'Distributeur', '0382334567', 'member.12@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'TREASURER'),
+    ('C3-M5', 'Nom membre 13', 'Prénom membre 13', '1999-08-11', 'MALE',   'Lot UV 80 Antsirabe',  'Apiculteur',   '0373365567', 'member.13@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'SENIOR'),
+    ('C3-M6', 'Nom membre 14', 'Prénom membre 14', '1998-08-09', 'FEMALE', 'Lot UV 6 Antsirabe',   'Apiculteur',   '0378234567', 'member.14@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'SENIOR'),
+    ('C3-M7', 'Nom membre 15', 'Prénom membre 15', '1998-01-13', 'MALE',   'Lot UV 7 Antsirabe',   'Apiculteur',   '0374914567', 'member.15@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'SENIOR'),
+    ('C3-M8', 'Nom membre 16', 'Prénom membre 16', '1975-08-02', 'MALE',   'Lot UV 8 Antsirabe',   'Apiculteur',   '0370634567', 'member.16@fed-agri.mg', '2026-01-01', TRUE, TRUE,  'SENIOR');
+
+-- ============================================================
+-- 5. SPONSORSHIPS (Tableaux 2, 3 et 4)
+-- relationship ajouté par migration V0.0.6 (nullable)
+-- ============================================================
+
+-- Parrainages col-1 (Tableau 2)
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c1m3-m1', '2026-01-01', 'C1-M1', 'C1-M3', 'collègues'),
+    ('sp-c1m3-m2', '2026-01-01', 'C1-M2', 'C1-M3', 'collègues'),
+    ('sp-c1m4-m1', '2026-01-01', 'C1-M1', 'C1-M4', 'collègues'),
+    ('sp-c1m4-m2', '2026-01-01', 'C1-M2', 'C1-M4', 'collègues'),
+    ('sp-c1m5-m1', '2026-01-01', 'C1-M1', 'C1-M5', 'collègues'),
+    ('sp-c1m5-m2', '2026-01-01', 'C1-M2', 'C1-M5', 'collègues'),
+    ('sp-c1m6-m1', '2026-01-01', 'C1-M1', 'C1-M6', 'collègues'),
+    ('sp-c1m6-m2', '2026-01-01', 'C1-M2', 'C1-M6', 'collègues'),
+    ('sp-c1m7-m1', '2026-01-01', 'C1-M1', 'C1-M7', 'collègues'),
+    ('sp-c1m7-m2', '2026-01-01', 'C1-M2', 'C1-M7', 'collègues'),
+    ('sp-c1m8-m6', '2026-01-01', 'C1-M6', 'C1-M8', 'collègues'),
+    ('sp-c1m8-m7', '2026-01-01', 'C1-M7', 'C1-M8', 'collègues');
+
+-- Parrainages col-2 (Tableau 3 — mêmes membres, parrains identiques)
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c2m3-m1', '2026-01-01', 'C1-M1', 'C1-M3', 'collègues'),
+    ('sp-c2m3-m2', '2026-01-01', 'C1-M2', 'C1-M3', 'collègues'),
+    ('sp-c2m4-m1', '2026-01-01', 'C1-M1', 'C1-M4', 'collègues'),
+    ('sp-c2m4-m2', '2026-01-01', 'C1-M2', 'C1-M4', 'collègues'),
+    ('sp-c2m5-m1', '2026-01-01', 'C1-M1', 'C1-M5', 'collègues'),
+    ('sp-c2m5-m2', '2026-01-01', 'C1-M2', 'C1-M5', 'collègues'),
+    ('sp-c2m6-m1', '2026-01-01', 'C1-M1', 'C1-M6', 'collègues'),
+    ('sp-c2m6-m2', '2026-01-01', 'C1-M2', 'C1-M6', 'collègues'),
+    ('sp-c2m7-m1', '2026-01-01', 'C1-M1', 'C1-M7', 'collègues'),
+    ('sp-c2m7-m2', '2026-01-01', 'C1-M2', 'C1-M7', 'collègues'),
+    ('sp-c2m8-m6', '2026-01-01', 'C1-M6', 'C1-M8', 'collègues'),
+    ('sp-c2m8-m7', '2026-01-01', 'C1-M7', 'C1-M8', 'collègues');
+
+-- Parrainages col-3 (Tableau 4)
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c3m3-m1', '2026-01-01', 'C3-M1', 'C3-M3', 'collègues'),
+    ('sp-c3m3-m2', '2026-01-01', 'C3-M2', 'C3-M3', 'collègues'),
+    ('sp-c3m4-m1', '2026-01-01', 'C3-M1', 'C3-M4', 'collègues'),
+    ('sp-c3m4-m2', '2026-01-01', 'C3-M2', 'C3-M4', 'collègues'),
+    ('sp-c3m5-m1', '2026-01-01', 'C3-M1', 'C3-M5', 'collègues'),
+    ('sp-c3m5-m2', '2026-01-01', 'C3-M2', 'C3-M5', 'collègues'),
+    ('sp-c3m6-m1', '2026-01-01', 'C3-M1', 'C3-M6', 'collègues'),
+    ('sp-c3m6-m2', '2026-01-01', 'C3-M2', 'C3-M6', 'collègues'),
+    ('sp-c3m7-m1', '2026-01-01', 'C3-M1', 'C3-M7', 'collègues'),
+    ('sp-c3m7-m2', '2026-01-01', 'C3-M2', 'C3-M7', 'collègues'),
+    ('sp-c3m8-m1', '2026-01-01', 'C3-M1', 'C3-M8', 'collègues'),
+    ('sp-c3m8-m2', '2026-01-01', 'C3-M2', 'C3-M8', 'collègues');
+
+-- ============================================================
+-- 6. MEMBERSHIP HISTORY (anciens membres — date 01/01/2026)
+-- ============================================================
+INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
+VALUES
+    -- col-1
+    ('mh-col1-m1', '2026-01-01', NULL, 'ADMISSION', 'C1-M1', 'col-1'),
+    ('mh-col1-m2', '2026-01-01', NULL, 'ADMISSION', 'C1-M2', 'col-1'),
+    ('mh-col1-m3', '2026-01-01', NULL, 'ADMISSION', 'C1-M3', 'col-1'),
+    ('mh-col1-m4', '2026-01-01', NULL, 'ADMISSION', 'C1-M4', 'col-1'),
+    ('mh-col1-m5', '2026-01-01', NULL, 'ADMISSION', 'C1-M5', 'col-1'),
+    ('mh-col1-m6', '2026-01-01', NULL, 'ADMISSION', 'C1-M6', 'col-1'),
+    ('mh-col1-m7', '2026-01-01', NULL, 'ADMISSION', 'C1-M7', 'col-1'),
+    ('mh-col1-m8', '2026-01-01', NULL, 'ADMISSION', 'C1-M8', 'col-1'),
+    -- col-2 (mêmes membres physiques)
+    ('mh-col2-m1', '2026-01-01', NULL, 'ADMISSION', 'C1-M1', 'col-2'),
+    ('mh-col2-m2', '2026-01-01', NULL, 'ADMISSION', 'C1-M2', 'col-2'),
+    ('mh-col2-m3', '2026-01-01', NULL, 'ADMISSION', 'C1-M3', 'col-2'),
+    ('mh-col2-m4', '2026-01-01', NULL, 'ADMISSION', 'C1-M4', 'col-2'),
+    ('mh-col2-m5', '2026-01-01', NULL, 'ADMISSION', 'C1-M5', 'col-2'),
+    ('mh-col2-m6', '2026-01-01', NULL, 'ADMISSION', 'C1-M6', 'col-2'),
+    ('mh-col2-m7', '2026-01-01', NULL, 'ADMISSION', 'C1-M7', 'col-2'),
+    ('mh-col2-m8', '2026-01-01', NULL, 'ADMISSION', 'C1-M8', 'col-2'),
+    -- col-3
+    ('mh-col3-m1', '2026-01-01', NULL, 'ADMISSION', 'C3-M1', 'col-3'),
+    ('mh-col3-m2', '2026-01-01', NULL, 'ADMISSION', 'C3-M2', 'col-3'),
+    ('mh-col3-m3', '2026-01-01', NULL, 'ADMISSION', 'C3-M3', 'col-3'),
+    ('mh-col3-m4', '2026-01-01', NULL, 'ADMISSION', 'C3-M4', 'col-3'),
+    ('mh-col3-m5', '2026-01-01', NULL, 'ADMISSION', 'C3-M5', 'col-3'),
+    ('mh-col3-m6', '2026-01-01', NULL, 'ADMISSION', 'C3-M6', 'col-3'),
+    ('mh-col3-m7', '2026-01-01', NULL, 'ADMISSION', 'C3-M7', 'col-3'),
+    ('mh-col3-m8', '2026-01-01', NULL, 'ADMISSION', 'C3-M8', 'col-3');
+
+-- ============================================================
+-- 7. COLLECTIVITY VOTES (requis par FK collectivity_term)
+-- ============================================================
+INSERT INTO collectivity_vote (id, vote_date, target_year, collectivity_id)
+VALUES
+    ('vote-col1-2026', '2025-12-15', 2026, 'col-1'),
+    ('vote-col2-2026', '2025-12-15', 2026, 'col-2'),
+    ('vote-col3-2026', '2025-12-15', 2026, 'col-3');
+
+-- ============================================================
+-- 8. COLLECTIVITY TERMS (mandats 2026)
+-- ============================================================
+
+-- col-1 (Tableau 2)
+INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
+VALUES
+    ('ct-col1-m1', 2026, 'C1-M1', 'col-1', 'pos-president',        'vote-col1-2026'),
+    ('ct-col1-m2', 2026, 'C1-M2', 'col-1', 'pos-vice-president',   'vote-col1-2026'),
+    ('ct-col1-m3', 2026, 'C1-M3', 'col-1', 'pos-secretary',        'vote-col1-2026'),
+    ('ct-col1-m4', 2026, 'C1-M4', 'col-1', 'pos-treasurer',        'vote-col1-2026'),
+    ('ct-col1-m5', 2026, 'C1-M5', 'col-1', 'pos-confirmed-member', 'vote-col1-2026'),
+    ('ct-col1-m6', 2026, 'C1-M6', 'col-1', 'pos-confirmed-member', 'vote-col1-2026'),
+    ('ct-col1-m7', 2026, 'C1-M7', 'col-1', 'pos-confirmed-member', 'vote-col1-2026'),
+    ('ct-col1-m8', 2026, 'C1-M8', 'col-1', 'pos-confirmed-member', 'vote-col1-2026');
+
+-- col-2 (Tableau 3)
+INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
+VALUES
+    ('ct-col2-m1', 2026, 'C1-M1', 'col-2', 'pos-confirmed-member', 'vote-col2-2026'),
+    ('ct-col2-m2', 2026, 'C1-M2', 'col-2', 'pos-confirmed-member', 'vote-col2-2026'),
+    ('ct-col2-m3', 2026, 'C1-M3', 'col-2', 'pos-confirmed-member', 'vote-col2-2026'),
+    ('ct-col2-m4', 2026, 'C1-M4', 'col-2', 'pos-confirmed-member', 'vote-col2-2026'),
+    ('ct-col2-m5', 2026, 'C1-M5', 'col-2', 'pos-president',        'vote-col2-2026'),
+    ('ct-col2-m6', 2026, 'C1-M6', 'col-2', 'pos-vice-president',   'vote-col2-2026'),
+    ('ct-col2-m7', 2026, 'C1-M7', 'col-2', 'pos-secretary',        'vote-col2-2026'),
+    ('ct-col2-m8', 2026, 'C1-M8', 'col-2', 'pos-treasurer',        'vote-col2-2026');
+
+-- col-3 (Tableau 4)
+INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
+VALUES
+    ('ct-col3-m1', 2026, 'C3-M1', 'col-3', 'pos-president',        'vote-col3-2026'),
+    ('ct-col3-m2', 2026, 'C3-M2', 'col-3', 'pos-vice-president',   'vote-col3-2026'),
+    ('ct-col3-m3', 2026, 'C3-M3', 'col-3', 'pos-secretary',        'vote-col3-2026'),
+    ('ct-col3-m4', 2026, 'C3-M4', 'col-3', 'pos-treasurer',        'vote-col3-2026'),
+    ('ct-col3-m5', 2026, 'C3-M5', 'col-3', 'pos-confirmed-member', 'vote-col3-2026'),
+    ('ct-col3-m6', 2026, 'C3-M6', 'col-3', 'pos-confirmed-member', 'vote-col3-2026'),
+    ('ct-col3-m7', 2026, 'C3-M7', 'col-3', 'pos-confirmed-member', 'vote-col3-2026'),
+    ('ct-col3-m8', 2026, 'C3-M8', 'col-3', 'pos-confirmed-member', 'vote-col3-2026');
+
+-- ============================================================
+-- 9. COLLECTIVITY STRUCTURE (bureaux)
+-- ============================================================
+INSERT INTO collectivity_structure (id, collectivity_id, president_id, vice_president_id, treasurer_id, secretary_id)
+VALUES
+    ('cs-col-1', 'col-1', 'C1-M1', 'C1-M2', 'C1-M4', 'C1-M3'),
+    ('cs-col-2', 'col-2', 'C1-M5', 'C1-M6', 'C1-M8', 'C1-M7'),
+    ('cs-col-3', 'col-3', 'C3-M1', 'C3-M2', 'C3-M4', 'C3-M3');
+
+-- ============================================================
+-- 10. COMPTES FINANCIERS DE BASE (à réinsérer avant les nouveaux)
+-- ============================================================
+
+-- col-1 : caisse + Orange Money
+INSERT INTO account (id, type, collectivity_id, federation_id, balance)
+VALUES
+    ('C1-A-CASH',     'cash',         'col-1', NULL, 0),
+    ('C1-A-MOBILE-1', 'mobile_money', 'col-1', NULL, 0);
+
+INSERT INTO account_mobile (account_id, holder_name, service_name, phone_number)
+VALUES ('C1-A-MOBILE-1', 'Mpanorina', 'ORANGE_MONEY', '0370489612');
+
+-- col-2 : caisse + Orange Money
+INSERT INTO account (id, type, collectivity_id, federation_id, balance)
+VALUES
+    ('C2-A-CASH',     'cash',         'col-2', NULL, 0),
+    ('C2-A-MOBILE-1', 'mobile_money', 'col-2', NULL, 0);
+
+INSERT INTO account_mobile (account_id, holder_name, service_name, phone_number)
+VALUES ('C2-A-MOBILE-1', 'Dobo voalohany', 'ORANGE_MONEY', '0320489612');
+
+-- col-3 : caisse seulement (de base)
+INSERT INTO account (id, type, collectivity_id, federation_id, balance)
+VALUES ('C3-A-CASH', 'cash', 'col-3', NULL, 0);
+
+-- ============================================================
+-- NOUVELLES DONNÉES DU 6 MAI 2026 (pages 24-29)
+-- ============================================================
+
+-- ============================================================
+-- 11. NOUVEAUX COMPTES col-3 (page 24 — point 1)
+--     2 comptes bancaires + 1 compte mobile money
+-- ============================================================
+
+-- Comptes bancaires col-3
 INSERT INTO account (id, type, collectivity_id, federation_id, balance)
 VALUES
     ('C3-A-BANK-1', 'bank', 'col-3', NULL, 0),
-    ('C3-A-BANK-2', 'bank', 'col-3', NULL, 0)
-ON CONFLICT (id) DO NOTHING;
+    ('C3-A-BANK-2', 'bank', 'col-3', NULL, 0);
 
--- account_number = BBBBBGGGGGCCCCCCCCCCCKKK (exactement 23 chars)
--- PDF : numéro de compte à 10 chiffres → zero-pad à 11 pour respecter le format
--- BMOI : 00004 + 00001 + 12345678901 + 12  = 23 chars
--- BRED : 00008 + 00003 + 45678901234 + 58  = 23 chars
--- bank_code et branch_code : colonnes ajoutées par migration V0.0.3
+-- account_extended ajoute bank_code et branch_code (migration V0.0.3)
+-- account_number stocke les 11 chiffres du numéro de compte (hors code banque/guichet/clé)
+-- rib_key = clé RIB (2 chiffres)
 INSERT INTO account_extended (account_id, holder_name, bank_name, account_number, rib_key, bank_code, branch_code)
 VALUES
-    ('C3-A-BANK-1', 'Koto',  'BMOI', '000040000112345678901 2', '12', '00004', '00001'),
-    ('C3-A-BANK-2', 'Naivo', 'BRED', '000080000345678901234 8', '58', '00008', '00003')
-ON CONFLICT (account_id) DO NOTHING;
--- Si votre application stocke account_number sans la clé RIB (21 chars), adaptez en conséquence.
+    ('C3-A-BANK-1', 'Koto',  'BMOI', '1234567890 ', '12', '00004', '00001'),
+    ('C3-A-BANK-2', 'Naivo', 'BRED', '4567890123 ', '58', '00008', '00003');
 
--- 1b. Un compte mobile money MVOLA pour col-3
---     service_name CHECK : 'ORANGE_MONEY' | 'MVOLA' | 'AIRTEL_MONEY'  → 'MVOLA' est valide
+-- Compte mobile money Mvola col-3
 INSERT INTO account (id, type, collectivity_id, federation_id, balance)
-VALUES ('C3-A-MOBILE-1', 'mobile_money', 'col-3', NULL, 0)
-ON CONFLICT (id) DO NOTHING;
+VALUES ('C3-A-MOBILE-1', 'mobile_money', 'col-3', NULL, 0);
 
 INSERT INTO account_mobile (account_id, holder_name, service_name, phone_number)
-VALUES ('C3-A-MOBILE-1', 'Kolo', 'MVOLA', '0341889612')
-ON CONFLICT (account_id) DO NOTHING;
+VALUES ('C3-A-MOBILE-1', 'Kolo', 'MVOLA', '0341889612');
 
 -- ============================================================
--- 2. NOUVELLES COTISATIONS (pages 25 - Tableaux 12, 13, 14)
--- membership_fee créée par migration V0.0.3
--- frequency CHECK : 'WEEKLY'|'MONTHLY'|'ANNUALLY'|'PUNCTUALLY'
--- status CHECK    : 'ACTIVE'|'INACTIVE'
+-- 12. COTISATIONS (pages 25 — point 2)
+--     Nouvelles listes remplaçant les anciennes
 -- ============================================================
 
--- 2a. Collectivité 1 - Tableau 12
+-- col-1 (Tableau 12)
 INSERT INTO membership_fee (id, label, status, frequency, eligible_from, amount, collectivity_id)
 VALUES
-    ('cot-1', 'Cotisation annuelle', 'ACTIVE',  'ANNUALLY',   '2026-01-01', 200000.00, 'col-1'),
-    ('cot-2', 'Famangiana',          'ACTIVE',  'PUNCTUALLY', '2026-04-30',  20000.00, 'col-1')
-ON CONFLICT (id) DO NOTHING;
+    ('cot-1', 'Cotisation annuelle', 'ACTIVE',   'ANNUALLY',   '2026-01-01', 200000.00, 'col-1'),
+    ('cot-2', 'Famangiana',          'ACTIVE',   'PUNCTUALLY', '2026-04-30',  20000.00, 'col-1');
 
--- 2b. Collectivité 2 - Tableau 13
+-- col-2 (Tableau 13)
 INSERT INTO membership_fee (id, label, status, frequency, eligible_from, amount, collectivity_id)
 VALUES
     ('cot-3', 'Cotisation annuelle', 'ACTIVE',   'ANNUALLY', '2026-01-01', 200000.00, 'col-2'),
-    ('cot-4', 'Cotisation 2025',     'INACTIVE', 'ANNUALLY', '2025-01-01', 100000.00, 'col-2')
-ON CONFLICT (id) DO NOTHING;
+    ('cot-4', 'Cotisation 2025',     'INACTIVE', 'ANNUALLY', '2025-01-01', 100000.00, 'col-2');
 
--- 2c. Collectivité 3 - Tableau 14
+-- col-3 (Tableau 14)
 INSERT INTO membership_fee (id, label, status, frequency, eligible_from, amount, collectivity_id)
 VALUES
-    ('cot-5', 'Cotisation mensuelle', 'ACTIVE', 'MONTHLY', '2026-04-01', 25000.00, 'col-3')
-ON CONFLICT (id) DO NOTHING;
+    ('cot-5', 'Cotisation mensuelle', 'ACTIVE', 'MONTHLY', '2026-04-01', 25000.00, 'col-3');
 
 -- ============================================================
--- 3. CONTRIBUTIONS ET TRANSACTIONS (pages 26-27 - Tableaux 15, 16, 17)
--- contribution.type CHECK (V0.0.3) : 'ANNUALLY' (pas 'ANNUAL'), 'MONTHLY', 'PUNCTUALLY'
--- payment_method CHECK : 'CASH' | 'BANK_TRANSFER' | 'MOBILE_BANKING'
--- collectivity_id nullable depuis V0.0.4, mais on le fournit toujours ici
+-- 13. PAIEMENTS (contributions) ET TRANSACTIONS — col-1 (Tableau 15, page 26)
+--     Nouveaux montants selon les nouvelles cotisations
 -- ============================================================
 
--- ------------------------------------------------------------
--- 3a. Collectivité 1 - Tableau 15
--- ------------------------------------------------------------
-INSERT INTO contribution (id, amount, collection_date, payment_method, type,
-                          member_id, collectivity_id, membership_fee_id,
-                          account_credited_id, creation_date, label)
+-- Contributions col-1
+INSERT INTO contribution (id, amount, collection_date, payment_method, type, member_id,
+                          collectivity_id, membership_fee_id, account_credited_id, creation_date, label)
 VALUES
-    ('con2-col1-m1', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M1', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col1-m2', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M2', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col1-m3', 200000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M3', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col1-m4', 200000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M4', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col1-m5', 150000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M5', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col1-m6', 100000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M6', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col1-m7',  60000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M7', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col1-m8',  90000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M8', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)')
-ON CONFLICT (id) DO NOTHING;
+    ('con-c1-m1', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M1', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c1-m2', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M2', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c1-m3', 200000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M3', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c1-m4', 200000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M4', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c1-m5', 150000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M5', 'col-1', 'cot-1', 'C1-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c1-m6', 100000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M6', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c1-m7',  60000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M7', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c1-m8',  90000.00, '2026-05-01', 'CASH',           'ANNUALLY', 'C1-M8', 'col-1', 'cot-1', 'C1-A-CASH',     '2026-05-01', 'Cotisation annuelle 2026 (partielle)');
 
+-- Transactions col-1
 INSERT INTO "transaction" (id, account_id, amount, transaction_date, description, member_id)
 VALUES
-    ('tr2-col1-m1', 'C1-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M1'),
-    ('tr2-col1-m2', 'C1-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M2'),
-    ('tr2-col1-m3', 'C1-A-MOBILE-1', 200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M3'),
-    ('tr2-col1-m4', 'C1-A-MOBILE-1', 200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M4'),
-    ('tr2-col1-m5', 'C1-A-MOBILE-1', 150000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M5'),
-    ('tr2-col1-m6', 'C1-A-CASH',     100000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M6'),
-    ('tr2-col1-m7', 'C1-A-CASH',      60000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M7'),
-    ('tr2-col1-m8', 'C1-A-CASH',      90000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M8')
-ON CONFLICT (id) DO NOTHING;
+    ('tr-c1-m1', 'C1-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M1'),
+    ('tr-c1-m2', 'C1-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M2'),
+    ('tr-c1-m3', 'C1-A-MOBILE-1', 200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M3'),
+    ('tr-c1-m4', 'C1-A-MOBILE-1', 200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M4'),
+    ('tr-c1-m5', 'C1-A-MOBILE-1', 150000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M5'),
+    ('tr-c1-m6', 'C1-A-CASH',     100000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M6'),
+    ('tr-c1-m7', 'C1-A-CASH',      60000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M7'),
+    ('tr-c1-m8', 'C1-A-CASH',      90000.00, '2026-05-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M8');
 
--- Soldes col-1 :
--- CASH     : 200k+200k + 100k+60k+90k = 650 000
--- MOBILE-1 : 200k+200k+150k           = 550 000
-UPDATE account SET balance = 650000.00 WHERE id = 'C1-A-CASH';
-UPDATE account SET balance = 550000.00 WHERE id = 'C1-A-MOBILE-1';
+-- ============================================================
+-- 14. PAIEMENTS ET TRANSACTIONS — col-2 (Tableau 16, page 26)
+-- ============================================================
 
--- ------------------------------------------------------------
--- 3b. Collectivité 2 - Tableau 16
--- ------------------------------------------------------------
-INSERT INTO contribution (id, amount, collection_date, payment_method, type,
-                          member_id, collectivity_id, membership_fee_id,
-                          account_credited_id, creation_date, label)
+-- Contributions col-2
+INSERT INTO contribution (id, amount, collection_date, payment_method, type, member_id,
+                          collectivity_id, membership_fee_id, account_credited_id, creation_date, label)
 VALUES
-    ('con2-col2-m1', 120000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M1', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col2-m2', 180000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M2', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col2-m3', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M3', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col2-m4', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M4', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col2-m5', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M5', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col2-m6', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M6', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
-    ('con2-col2-m7',  80000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M7', 'col-2', 'cot-3', 'C2-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
-    ('con2-col2-m8', 120000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M8', 'col-2', 'cot-3', 'C2-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)')
-ON CONFLICT (id) DO NOTHING;
+    ('con-c2-m1', 120000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M1', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c2-m2', 180000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M2', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c2-m3', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M3', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c2-m4', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M4', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c2-m5', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M5', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c2-m6', 200000.00, '2026-01-01', 'CASH',           'ANNUALLY', 'C1-M6', 'col-2', 'cot-3', 'C2-A-CASH',     '2026-01-01', 'Cotisation annuelle 2026'),
+    ('con-c2-m7',  80000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M7', 'col-2', 'cot-3', 'C2-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)'),
+    ('con-c2-m8', 120000.00, '2026-01-01', 'MOBILE_BANKING', 'ANNUALLY', 'C1-M8', 'col-2', 'cot-3', 'C2-A-MOBILE-1', '2026-01-01', 'Cotisation annuelle 2026 (partielle)');
 
+-- Transactions col-2
 INSERT INTO "transaction" (id, account_id, amount, transaction_date, description, member_id)
 VALUES
-    ('tr2-col2-m1', 'C2-A-CASH',      120000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M1'),
-    ('tr2-col2-m2', 'C2-A-CASH',      180000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M2'),
-    ('tr2-col2-m3', 'C2-A-CASH',      200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M3'),
-    ('tr2-col2-m4', 'C2-A-CASH',      200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M4'),
-    ('tr2-col2-m5', 'C2-A-CASH',      200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M5'),
-    ('tr2-col2-m6', 'C2-A-CASH',      200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M6'),
-    ('tr2-col2-m7', 'C2-A-MOBILE-1',   80000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M7'),
-    ('tr2-col2-m8', 'C2-A-MOBILE-1',  120000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M8')
-ON CONFLICT (id) DO NOTHING;
+    ('tr-c2-m1', 'C2-A-CASH',     120000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M1'),
+    ('tr-c2-m2', 'C2-A-CASH',     180000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M2'),
+    ('tr-c2-m3', 'C2-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M3'),
+    ('tr-c2-m4', 'C2-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M4'),
+    ('tr-c2-m5', 'C2-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M5'),
+    ('tr-c2-m6', 'C2-A-CASH',     200000.00, '2026-01-01', 'Cotisation annuelle 2026',             'C1-M6'),
+    ('tr-c2-m7', 'C2-A-MOBILE-1',  80000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M7'),
+    ('tr-c2-m8', 'C2-A-MOBILE-1', 120000.00, '2026-01-01', 'Cotisation annuelle 2026 (partielle)', 'C1-M8');
 
--- Soldes col-2 :
--- CASH     : 120k+180k+200k×4 = 1 100 000
--- MOBILE-1 : 80k+120k         = 200 000
-UPDATE account SET balance = 1100000.00 WHERE id = 'C2-A-CASH';
-UPDATE account SET balance =  200000.00 WHERE id = 'C2-A-MOBILE-1';
+-- ============================================================
+-- 15. PAIEMENTS ET TRANSACTIONS — col-3 (Tableau 17, page 27)
+--     Paiements en avril et mai 2026
+-- ============================================================
 
--- ------------------------------------------------------------
--- 3c. Collectivité 3 - Tableau 17
--- Deux mois de cotisation mensuelle (avril + mai 2026)
--- Le PDF indique "BANK" comme moyen de paiement pour C3-M3/M4 en mai
--- mais le compte crédité est C3-A-MOBILE-1 → on utilise 'MOBILE_BANKING'
--- qui est cohérent avec le compte mobile money crédité.
--- ------------------------------------------------------------
-INSERT INTO contribution (id, amount, collection_date, payment_method, type,
-                          member_id, collectivity_id, membership_fee_id,
-                          account_credited_id, creation_date, label)
+-- Contributions col-3
+INSERT INTO contribution (id, amount, collection_date, payment_method, type, member_id,
+                          collectivity_id, membership_fee_id, account_credited_id, creation_date, label)
 VALUES
     -- Avril 2026
-    ('con-col3-m1-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M1', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m2-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M2', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m3-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M3', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m4-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M4', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m5-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M5', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m6-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M6', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m7-apr', 25000.00, '2026-04-01', 'CASH',           'MONTHLY', 'C3-M7', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-04-01', 'Cotisation mensuelle avril 2026'),
-    ('con-col3-m8-apr', 25000.00, '2026-04-01', 'CASH',           'MONTHLY', 'C3-M8', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m1-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M1', 'col-3', 'cot-5', 'C3-A-BANK-1', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m2-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M2', 'col-3', 'cot-5', 'C3-A-BANK-1', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m3-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M3', 'col-3', 'cot-5', 'C3-A-BANK-1', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m4-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M4', 'col-3', 'cot-5', 'C3-A-BANK-1', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m5-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M5', 'col-3', 'cot-5', 'C3-A-BANK-2', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m6-apr', 25000.00, '2026-04-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M6', 'col-3', 'cot-5', 'C3-A-BANK-2', '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m7-apr', 25000.00, '2026-04-01', 'CASH',          'MONTHLY', 'C3-M7', 'col-3', 'cot-5', 'C3-A-CASH',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
+    ('con-c3-m8-apr', 25000.00, '2026-04-01', 'CASH',          'MONTHLY', 'C3-M8', 'col-3', 'cot-5', 'C3-A-CASH',   '2026-04-01', 'Cotisation mensuelle avril 2026'),
     -- Mai 2026
-    ('con-col3-m1-may', 25000.00, '2026-05-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M1', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
-    ('con-col3-m2-may', 25000.00, '2026-05-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M2', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
-    ('con-col3-m3-may', 15000.00, '2026-05-01', 'MOBILE_BANKING', 'MONTHLY', 'C3-M3', 'col-3', 'cot-5', 'C3-A-MOBILE-1', '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
-    ('con-col3-m4-may', 15000.00, '2026-05-01', 'MOBILE_BANKING', 'MONTHLY', 'C3-M4', 'col-3', 'cot-5', 'C3-A-MOBILE-1', '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
-    ('con-col3-m5-may', 20000.00, '2026-05-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M5', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
-    ('con-col3-m6-may', 25000.00, '2026-05-01', 'BANK_TRANSFER',  'MONTHLY', 'C3-M6', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
-    ('con-col3-m7-may',  5000.00, '2026-05-01', 'CASH',           'MONTHLY', 'C3-M7', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
-    ('con-col3-m8-may',  5000.00, '2026-05-01', 'CASH',           'MONTHLY', 'C3-M8', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)')
-ON CONFLICT (id) DO NOTHING;
+    ('con-c3-m1-may', 25000.00, '2026-05-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M1', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
+    ('con-c3-m2-may', 25000.00, '2026-05-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M2', 'col-3', 'cot-5', 'C3-A-BANK-1',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
+    ('con-c3-m3-may', 15000.00, '2026-05-01', 'MOBILE_BANKING','MONTHLY', 'C3-M3', 'col-3', 'cot-5', 'C3-A-MOBILE-1', '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
+    ('con-c3-m4-may', 15000.00, '2026-05-01', 'MOBILE_BANKING','MONTHLY', 'C3-M4', 'col-3', 'cot-5', 'C3-A-MOBILE-1', '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
+    ('con-c3-m5-may', 20000.00, '2026-05-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M5', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
+    ('con-c3-m6-may', 25000.00, '2026-05-01', 'BANK_TRANSFER', 'MONTHLY', 'C3-M6', 'col-3', 'cot-5', 'C3-A-BANK-2',   '2026-05-01', 'Cotisation mensuelle mai 2026'),
+    ('con-c3-m7-may',  5000.00, '2026-05-01', 'CASH',          'MONTHLY', 'C3-M7', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)'),
+    ('con-c3-m8-may',  5000.00, '2026-05-01', 'CASH',          'MONTHLY', 'C3-M8', 'col-3', 'cot-5', 'C3-A-CASH',     '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)');
 
+-- Transactions col-3
 INSERT INTO "transaction" (id, account_id, amount, transaction_date, description, member_id)
 VALUES
-    -- Avril
-    ('tr-col3-m1-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M1'),
-    ('tr-col3-m2-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M2'),
-    ('tr-col3-m3-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M3'),
-    ('tr-col3-m4-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M4'),
-    ('tr-col3-m5-apr', 'C3-A-BANK-2',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M5'),
-    ('tr-col3-m6-apr', 'C3-A-BANK-2',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M6'),
-    ('tr-col3-m7-apr', 'C3-A-CASH',     25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M7'),
-    ('tr-col3-m8-apr', 'C3-A-CASH',     25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026',             'C3-M8'),
-    -- Mai
-    ('tr-col3-m1-may', 'C3-A-BANK-1',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M1'),
-    ('tr-col3-m2-may', 'C3-A-BANK-1',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M2'),
-    ('tr-col3-m3-may', 'C3-A-MOBILE-1', 15000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M3'),
-    ('tr-col3-m4-may', 'C3-A-MOBILE-1', 15000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M4'),
-    ('tr-col3-m5-may', 'C3-A-BANK-2',   20000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M5'),
-    ('tr-col3-m6-may', 'C3-A-BANK-2',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M6'),
-    ('tr-col3-m7-may', 'C3-A-CASH',      5000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M7'),
-    ('tr-col3-m8-may', 'C3-A-CASH',      5000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M8')
-ON CONFLICT (id) DO NOTHING;
-
--- Soldes col-3 :
--- BANK-1   : (25k×4) + (25k+25k) = 100k + 50k   = 150 000
--- BANK-2   : (25k+25k) + (20k+25k) = 50k + 45k  =  95 000
--- MOBILE-1 : 15k+15k               =               30 000
--- CASH     : (25k+25k) + (5k+5k)   = 50k + 10k  =  60 000
-UPDATE account SET balance = 150000.00 WHERE id = 'C3-A-BANK-1';
-UPDATE account SET balance =  95000.00 WHERE id = 'C3-A-BANK-2';
-UPDATE account SET balance =  30000.00 WHERE id = 'C3-A-MOBILE-1';
-UPDATE account SET balance =  60000.00 WHERE id = 'C3-A-CASH';
+    -- Avril 2026
+    ('tr-c3-m1-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M1'),
+    ('tr-c3-m2-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M2'),
+    ('tr-c3-m3-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M3'),
+    ('tr-c3-m4-apr', 'C3-A-BANK-1',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M4'),
+    ('tr-c3-m5-apr', 'C3-A-BANK-2',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M5'),
+    ('tr-c3-m6-apr', 'C3-A-BANK-2',   25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M6'),
+    ('tr-c3-m7-apr', 'C3-A-CASH',     25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M7'),
+    ('tr-c3-m8-apr', 'C3-A-CASH',     25000.00, '2026-04-01', 'Cotisation mensuelle avril 2026', 'C3-M8'),
+    -- Mai 2026
+    ('tr-c3-m1-may', 'C3-A-BANK-1',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M1'),
+    ('tr-c3-m2-may', 'C3-A-BANK-1',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M2'),
+    ('tr-c3-m3-may', 'C3-A-MOBILE-1', 15000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M3'),
+    ('tr-c3-m4-may', 'C3-A-MOBILE-1', 15000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M4'),
+    ('tr-c3-m5-may', 'C3-A-BANK-2',   20000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M5'),
+    ('tr-c3-m6-may', 'C3-A-BANK-2',   25000.00, '2026-05-01', 'Cotisation mensuelle mai 2026',             'C3-M6'),
+    ('tr-c3-m7-may', 'C3-A-CASH',      5000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M7'),
+    ('tr-c3-m8-may', 'C3-A-CASH',      5000.00, '2026-05-01', 'Cotisation mensuelle mai 2026 (partielle)', 'C3-M8');
 
 -- ============================================================
--- 4. NOUVEAUX MEMBRES ADHÉRENTS (pages 27-29 - Tableaux 18, 19, 20)
--- membership_type CHECK (V0.0.5) : 'JUNIOR'|'SENIOR'|'SECRETARY'|
---                                   'TREASURER'|'VICE_PRESIDENT'|'PRESIDENT'
--- Tous les nouveaux sont JUNIOR.
--- Les données <random> sont remplies avec des valeurs fictives cohérentes.
+-- 16. MISE À JOUR DES SOLDES DES COMPTES
+-- col-1 :
+--   cash     : 200k+200k + 100k+60k+90k       = 650 000
+--   mobile-1 : 200k+200k+150k                 = 550 000
+-- col-2 :
+--   cash     : 120k+180k+200k+200k+200k+200k  = 1 100 000
+--   mobile-1 : 80k+120k                       = 200 000
+-- col-3 :
+--   bank-1   : 25k*4(avr) + 25k+25k(mai)      = 150 000
+--   bank-2   : 25k+25k(avr) + 20k+25k(mai)    = 95 000
+--   mobile-1 : 15k+15k(mai)                   = 30 000
+--   cash     : 25k+25k(avr) + 5k+5k(mai)      = 60 000
+-- ============================================================
+UPDATE account SET balance =  650000.00 WHERE id = 'C1-A-CASH';
+UPDATE account SET balance =  550000.00 WHERE id = 'C1-A-MOBILE-1';
+UPDATE account SET balance = 1100000.00 WHERE id = 'C2-A-CASH';
+UPDATE account SET balance =  200000.00 WHERE id = 'C2-A-MOBILE-1';
+UPDATE account SET balance =  150000.00 WHERE id = 'C3-A-BANK-1';
+UPDATE account SET balance =   95000.00 WHERE id = 'C3-A-BANK-2';
+UPDATE account SET balance =   30000.00 WHERE id = 'C3-A-MOBILE-1';
+UPDATE account SET balance =   60000.00 WHERE id = 'C3-A-CASH';
+
+-- ============================================================
+-- 17. NOUVEAUX MEMBRES JUNIORS (pages 27-29, Tableaux 18-20)
+--     Données <random> → valeurs fictives cohérentes
+--     Tous parrainés par 2 membres confirmés de la collectivité cible
 -- ============================================================
 
--- ------------------------------------------------------------
--- 4a. Collectivité 1 - Tableau 18 (4 nouveaux juniors)
--- ------------------------------------------------------------
+-- --- Nouveaux membres (entités physiques) ---
+
+-- col-1 : 4 nouveaux juniors (Tableau 18)
 INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation,
                     phone, email, membership_date,
                     registration_fee_paid, membership_dues_paid, membership_type)
 VALUES
-    ('C1-NM1', 'RandoA1', 'JuniorA1', '2000-01-15', 'MALE',   'Lot NM1 Ambato.', 'Agriculteur', '0340010001', 'nm1.col1@fed-agri.mg', '2026-04-01', TRUE, FALSE, 'JUNIOR'),
-    ('C1-NM2', 'RandoA2', 'JuniorA2', '2001-03-20', 'FEMALE', 'Lot NM2 Ambato.', 'Agriculteur', '0340010002', 'nm2.col1@fed-agri.mg', '2026-04-01', TRUE, FALSE, 'JUNIOR'),
-    ('C1-NM3', 'RandoA3', 'JuniorA3', '1999-07-10', 'MALE',   'Lot NM3 Ambato.', 'Agriculteur', '0340010003', 'nm3.col1@fed-agri.mg', '2026-05-01', TRUE, FALSE, 'JUNIOR'),
-    ('C1-NM4', 'RandoA4', 'JuniorA4', '2002-11-05', 'MALE',   'Lot NM4 Ambato.', 'Agriculteur', '0340010004', 'nm4.col1@fed-agri.mg', '2026-06-01', TRUE, FALSE, 'JUNIOR')
-ON CONFLICT (id) DO NOTHING;
+    ('C1-NM1', 'Nouveau membre 1',  'Prénom NM1',  '2000-03-15', 'MALE',   'Lot NM1 Ambato.',  'Agriculteur', '0340000001', 'nm1.col1@fed-agri.mg',  '2026-04-01', TRUE, FALSE, 'JUNIOR'),
+    ('C1-NM2', 'Nouveau membre 2',  'Prénom NM2',  '2001-07-20', 'FEMALE', 'Lot NM2 Ambato.',  'Agriculteur', '0340000002', 'nm2.col1@fed-agri.mg',  '2026-04-01', TRUE, FALSE, 'JUNIOR'),
+    ('C1-NM3', 'Nouveau membre 3',  'Prénom NM3',  '1999-11-05', 'MALE',   'Lot NM3 Ambato.',  'Agriculteur', '0340000003', 'nm3.col1@fed-agri.mg',  '2026-05-01', TRUE, FALSE, 'JUNIOR'),
+    ('C1-NM4', 'Nouveau membre 4',  'Prénom NM4',  '2002-01-10', 'MALE',   'Lot NM4 Ambato.',  'Agriculteur', '0340000004', 'nm4.col1@fed-agri.mg',  '2026-06-01', TRUE, FALSE, 'JUNIOR');
 
-INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
-VALUES
-    ('mh-col1-nm1', '2026-04-01', NULL, 'ADMISSION', 'C1-NM1', 'col-1'),
-    ('mh-col1-nm2', '2026-04-01', NULL, 'ADMISSION', 'C1-NM2', 'col-1'),
-    ('mh-col1-nm3', '2026-05-01', NULL, 'ADMISSION', 'C1-NM3', 'col-1'),
-    ('mh-col1-nm4', '2026-06-01', NULL, 'ADMISSION', 'C1-NM4', 'col-1')
-ON CONFLICT (id) DO NOTHING;
-
--- Parrains : C1-M1 et C1-M2 (confirmés dans col-1)
--- relationship : colonne ajoutée par migration V0.0.6
-INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
-VALUES
-    ('sp-col1-nm1-m1', '2026-04-01', 'C1-M1', 'C1-NM1', 'Amis'),
-    ('sp-col1-nm1-m2', '2026-04-01', 'C1-M2', 'C1-NM1', 'Famille'),
-    ('sp-col1-nm2-m1', '2026-04-01', 'C1-M1', 'C1-NM2', 'Collègues'),
-    ('sp-col1-nm2-m2', '2026-04-01', 'C1-M2', 'C1-NM2', 'Amis'),
-    ('sp-col1-nm3-m1', '2026-05-01', 'C1-M1', 'C1-NM3', 'Famille'),
-    ('sp-col1-nm3-m2', '2026-05-01', 'C1-M2', 'C1-NM3', 'Amis'),
-    ('sp-col1-nm4-m1', '2026-06-01', 'C1-M1', 'C1-NM4', 'Collègues'),
-    ('sp-col1-nm4-m2', '2026-06-01', 'C1-M2', 'C1-NM4', 'Famille')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
-VALUES
-    ('ct-col1-nm1', 2026, 'C1-NM1', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
-    ('ct-col1-nm2', 2026, 'C1-NM2', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
-    ('ct-col1-nm3', 2026, 'C1-NM3', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
-    ('ct-col1-nm4', 2026, 'C1-NM4', 'col-1', 'pos-junior-member', 'vote-col1-2026')
-ON CONFLICT (id) DO NOTHING;
-
--- ------------------------------------------------------------
--- 4b. Collectivité 2 - Tableau 19 (3 nouveaux juniors)
--- ------------------------------------------------------------
+-- col-2 : 3 nouveaux juniors (Tableau 19)
 INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation,
                     phone, email, membership_date,
                     registration_fee_paid, membership_dues_paid, membership_type)
 VALUES
-    ('C2-NM1', 'RandoB1', 'JuniorB1', '2000-05-12', 'FEMALE', 'Lot NM1 Ambato.', 'Agriculteur', '0340020001', 'nm1.col2@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
-    ('C2-NM2', 'RandoB2', 'JuniorB2', '2001-09-25', 'MALE',   'Lot NM2 Ambato.', 'Agriculteur', '0340020002', 'nm2.col2@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
-    ('C2-NM3', 'RandoB3', 'JuniorB3', '1999-12-30', 'MALE',   'Lot NM3 Ambato.', 'Agriculteur', '0340020003', 'nm3.col2@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR')
-ON CONFLICT (id) DO NOTHING;
+    ('C2-NM1', 'Nouveau membre 5',  'Prénom NM5',  '2000-06-12', 'FEMALE', 'Lot NM5 Ambato.',  'Agriculteur', '0340000005', 'nm5.col2@fed-agri.mg',  '2026-03-01', TRUE, FALSE, 'JUNIOR'),
+    ('C2-NM2', 'Nouveau membre 6',  'Prénom NM6',  '2001-09-25', 'MALE',   'Lot NM6 Ambato.',  'Agriculteur', '0340000006', 'nm6.col2@fed-agri.mg',  '2026-03-01', TRUE, FALSE, 'JUNIOR'),
+    ('C2-NM3', 'Nouveau membre 7',  'Prénom NM7',  '1998-04-18', 'MALE',   'Lot NM7 Ambato.',  'Agriculteur', '0340000007', 'nm7.col2@fed-agri.mg',  '2026-03-01', TRUE, FALSE, 'JUNIOR');
 
-INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
-VALUES
-    ('mh-col2-nm1', '2026-03-01', NULL, 'ADMISSION', 'C2-NM1', 'col-2'),
-    ('mh-col2-nm2', '2026-03-01', NULL, 'ADMISSION', 'C2-NM2', 'col-2'),
-    ('mh-col2-nm3', '2026-03-01', NULL, 'ADMISSION', 'C2-NM3', 'col-2')
-ON CONFLICT (id) DO NOTHING;
-
--- Parrains : C1-M1 et C1-M2 (membres confirmés dans col-2 aussi)
-INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
-VALUES
-    ('sp-col2-nm1-m1', '2026-03-01', 'C1-M1', 'C2-NM1', 'Amis'),
-    ('sp-col2-nm1-m2', '2026-03-01', 'C1-M2', 'C2-NM1', 'Famille'),
-    ('sp-col2-nm2-m1', '2026-03-01', 'C1-M1', 'C2-NM2', 'Collègues'),
-    ('sp-col2-nm2-m2', '2026-03-01', 'C1-M2', 'C2-NM2', 'Amis'),
-    ('sp-col2-nm3-m1', '2026-03-01', 'C1-M1', 'C2-NM3', 'Famille'),
-    ('sp-col2-nm3-m2', '2026-03-01', 'C1-M2', 'C2-NM3', 'Collègues')
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
-VALUES
-    ('ct-col2-nm1', 2026, 'C2-NM1', 'col-2', 'pos-junior-member', 'vote-col2-2026'),
-    ('ct-col2-nm2', 2026, 'C2-NM2', 'col-2', 'pos-junior-member', 'vote-col2-2026'),
-    ('ct-col2-nm3', 2026, 'C2-NM3', 'col-2', 'pos-junior-member', 'vote-col2-2026')
-ON CONFLICT (id) DO NOTHING;
-
--- ------------------------------------------------------------
--- 4c. Collectivité 3 - Tableau 20 (6 nouveaux juniors)
--- ------------------------------------------------------------
+-- col-3 : 6 nouveaux juniors (Tableau 20)
 INSERT INTO member (id, lastname, firstname, birth_date, gender, address, occupation,
                     phone, email, membership_date,
                     registration_fee_paid, membership_dues_paid, membership_type)
 VALUES
-    ('C3-NM1', 'RandoC1', 'JuniorC1', '2000-02-18', 'MALE',   'Lot NM1 Antsirabe', 'Apiculteur', '0340030001', 'nm1.col3@fed-agri.mg', '2026-01-01', TRUE, FALSE, 'JUNIOR'),
-    ('C3-NM2', 'RandoC2', 'JuniorC2', '2001-06-14', 'FEMALE', 'Lot NM2 Antsirabe', 'Apiculteur', '0340030002', 'nm2.col3@fed-agri.mg', '2026-02-01', TRUE, FALSE, 'JUNIOR'),
-    ('C3-NM3', 'RandoC3', 'JuniorC3', '1999-04-22', 'MALE',   'Lot NM3 Antsirabe', 'Apiculteur', '0340030003', 'nm3.col3@fed-agri.mg', '2026-02-01', TRUE, FALSE, 'JUNIOR'),
-    ('C3-NM4', 'RandoC4', 'JuniorC4', '2002-08-09', 'MALE',   'Lot NM4 Antsirabe', 'Apiculteur', '0340030004', 'nm4.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
-    ('C3-NM5', 'RandoC5', 'JuniorC5', '2000-10-03', 'FEMALE', 'Lot NM5 Antsirabe', 'Apiculteur', '0340030005', 'nm5.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
-    ('C3-NM6', 'RandoC6', 'JuniorC6', '2001-12-17', 'MALE',   'Lot NM6 Antsirabe', 'Apiculteur', '0340030006', 'nm6.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR')
-ON CONFLICT (id) DO NOTHING;
+    ('C3-NM1', 'Nouveau membre 8',  'Prénom NM8',  '2000-05-03', 'MALE',   'Lot NM8 Antsirabe.',  'Apiculteur', '0340000008', 'nm8.col3@fed-agri.mg',  '2026-01-01', TRUE, FALSE, 'JUNIOR'),
+    ('C3-NM2', 'Nouveau membre 9',  'Prénom NM9',  '2001-12-14', 'FEMALE', 'Lot NM9 Antsirabe.',  'Apiculteur', '0340000009', 'nm9.col3@fed-agri.mg',  '2026-02-01', TRUE, FALSE, 'JUNIOR'),
+    ('C3-NM3', 'Nouveau membre 10', 'Prénom NM10', '1999-08-29', 'MALE',   'Lot NM10 Antsirabe.', 'Apiculteur', '0340000010', 'nm10.col3@fed-agri.mg', '2026-02-01', TRUE, FALSE, 'JUNIOR'),
+    ('C3-NM4', 'Nouveau membre 11', 'Prénom NM11', '2002-02-22', 'MALE',   'Lot NM11 Antsirabe.', 'Apiculteur', '0340000011', 'nm11.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
+    ('C3-NM5', 'Nouveau membre 12', 'Prénom NM12', '2000-07-09', 'FEMALE', 'Lot NM12 Antsirabe.', 'Apiculteur', '0340000012', 'nm12.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR'),
+    ('C3-NM6', 'Nouveau membre 13', 'Prénom NM13', '2001-03-31', 'MALE',   'Lot NM13 Antsirabe.', 'Apiculteur', '0340000013', 'nm13.col3@fed-agri.mg', '2026-03-01', TRUE, FALSE, 'JUNIOR');
 
+-- --- Membership history pour les nouveaux membres ---
+
+-- col-1
 INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
 VALUES
-    ('mh-col3-nm1', '2026-01-01', NULL, 'ADMISSION', 'C3-NM1', 'col-3'),
-    ('mh-col3-nm2', '2026-02-01', NULL, 'ADMISSION', 'C3-NM2', 'col-3'),
-    ('mh-col3-nm3', '2026-02-01', NULL, 'ADMISSION', 'C3-NM3', 'col-3'),
-    ('mh-col3-nm4', '2026-03-01', NULL, 'ADMISSION', 'C3-NM4', 'col-3'),
-    ('mh-col3-nm5', '2026-03-01', NULL, 'ADMISSION', 'C3-NM5', 'col-3'),
-    ('mh-col3-nm6', '2026-03-01', NULL, 'ADMISSION', 'C3-NM6', 'col-3')
-ON CONFLICT (id) DO NOTHING;
+    ('mh-c1-nm1', '2026-04-01', NULL, 'ADMISSION', 'C1-NM1', 'col-1'),
+    ('mh-c1-nm2', '2026-04-01', NULL, 'ADMISSION', 'C1-NM2', 'col-1'),
+    ('mh-c1-nm3', '2026-05-01', NULL, 'ADMISSION', 'C1-NM3', 'col-1'),
+    ('mh-c1-nm4', '2026-06-01', NULL, 'ADMISSION', 'C1-NM4', 'col-1');
 
--- Parrains : C3-M1 et C3-M2
-INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+-- col-2
+INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
 VALUES
-    ('sp-col3-nm1-m1', '2026-01-01', 'C3-M1', 'C3-NM1', 'Amis'),
-    ('sp-col3-nm1-m2', '2026-01-01', 'C3-M2', 'C3-NM1', 'Famille'),
-    ('sp-col3-nm2-m1', '2026-02-01', 'C3-M1', 'C3-NM2', 'Collègues'),
-    ('sp-col3-nm2-m2', '2026-02-01', 'C3-M2', 'C3-NM2', 'Amis'),
-    ('sp-col3-nm3-m1', '2026-02-01', 'C3-M1', 'C3-NM3', 'Famille'),
-    ('sp-col3-nm3-m2', '2026-02-01', 'C3-M2', 'C3-NM3', 'Collègues'),
-    ('sp-col3-nm4-m1', '2026-03-01', 'C3-M1', 'C3-NM4', 'Amis'),
-    ('sp-col3-nm4-m2', '2026-03-01', 'C3-M2', 'C3-NM4', 'Famille'),
-    ('sp-col3-nm5-m1', '2026-03-01', 'C3-M1', 'C3-NM5', 'Collègues'),
-    ('sp-col3-nm5-m2', '2026-03-01', 'C3-M2', 'C3-NM5', 'Amis'),
-    ('sp-col3-nm6-m1', '2026-03-01', 'C3-M1', 'C3-NM6', 'Famille'),
-    ('sp-col3-nm6-m2', '2026-03-01', 'C3-M2', 'C3-NM6', 'Collègues')
-ON CONFLICT (id) DO NOTHING;
+    ('mh-c2-nm1', '2026-03-01', NULL, 'ADMISSION', 'C2-NM1', 'col-2'),
+    ('mh-c2-nm2', '2026-03-01', NULL, 'ADMISSION', 'C2-NM2', 'col-2'),
+    ('mh-c2-nm3', '2026-03-01', NULL, 'ADMISSION', 'C2-NM3', 'col-2');
 
+-- col-3
+INSERT INTO membership_history (id, start_date, end_date, reason, member_id, collectivity_id)
+VALUES
+    ('mh-c3-nm1', '2026-01-01', NULL, 'ADMISSION', 'C3-NM1', 'col-3'),
+    ('mh-c3-nm2', '2026-02-01', NULL, 'ADMISSION', 'C3-NM2', 'col-3'),
+    ('mh-c3-nm3', '2026-02-01', NULL, 'ADMISSION', 'C3-NM3', 'col-3'),
+    ('mh-c3-nm4', '2026-03-01', NULL, 'ADMISSION', 'C3-NM4', 'col-3'),
+    ('mh-c3-nm5', '2026-03-01', NULL, 'ADMISSION', 'C3-NM5', 'col-3'),
+    ('mh-c3-nm6', '2026-03-01', NULL, 'ADMISSION', 'C3-NM6', 'col-3');
+
+-- --- Collectivity terms (JUNIOR_MEMBER) pour les nouveaux membres ---
+
+-- col-1
 INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
 VALUES
-    ('ct-col3-nm1', 2026, 'C3-NM1', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
-    ('ct-col3-nm2', 2026, 'C3-NM2', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
-    ('ct-col3-nm3', 2026, 'C3-NM3', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
-    ('ct-col3-nm4', 2026, 'C3-NM4', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
-    ('ct-col3-nm5', 2026, 'C3-NM5', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
-    ('ct-col3-nm6', 2026, 'C3-NM6', 'col-3', 'pos-junior-member', 'vote-col3-2026')
-ON CONFLICT (id) DO NOTHING;
+    ('ct-c1-nm1', 2026, 'C1-NM1', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
+    ('ct-c1-nm2', 2026, 'C1-NM2', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
+    ('ct-c1-nm3', 2026, 'C1-NM3', 'col-1', 'pos-junior-member', 'vote-col1-2026'),
+    ('ct-c1-nm4', 2026, 'C1-NM4', 'col-1', 'pos-junior-member', 'vote-col1-2026');
+
+-- col-2
+INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
+VALUES
+    ('ct-c2-nm1', 2026, 'C2-NM1', 'col-2', 'pos-junior-member', 'vote-col2-2026'),
+    ('ct-c2-nm2', 2026, 'C2-NM2', 'col-2', 'pos-junior-member', 'vote-col2-2026'),
+    ('ct-c2-nm3', 2026, 'C2-NM3', 'col-2', 'pos-junior-member', 'vote-col2-2026');
+
+-- col-3
+INSERT INTO collectivity_term (id, year, member_id, collectivity_id, position_id, vote_id)
+VALUES
+    ('ct-c3-nm1', 2026, 'C3-NM1', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
+    ('ct-c3-nm2', 2026, 'C3-NM2', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
+    ('ct-c3-nm3', 2026, 'C3-NM3', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
+    ('ct-c3-nm4', 2026, 'C3-NM4', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
+    ('ct-c3-nm5', 2026, 'C3-NM5', 'col-3', 'pos-junior-member', 'vote-col3-2026'),
+    ('ct-c3-nm6', 2026, 'C3-NM6', 'col-3', 'pos-junior-member', 'vote-col3-2026');
+
+-- --- Sponsorships pour les nouveaux membres (parrains de la collectivité cible) ---
+
+-- col-1 nouveaux (Tableau 18) — parrains : C1-M1 et C1-M2
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c1nm1-m1', '2026-04-01', 'C1-M1', 'C1-NM1', 'amis'),
+    ('sp-c1nm1-m2', '2026-04-01', 'C1-M2', 'C1-NM1', 'amis'),
+    ('sp-c1nm2-m1', '2026-04-01', 'C1-M1', 'C1-NM2', 'amis'),
+    ('sp-c1nm2-m2', '2026-04-01', 'C1-M2', 'C1-NM2', 'amis'),
+    ('sp-c1nm3-m1', '2026-05-01', 'C1-M1', 'C1-NM3', 'amis'),
+    ('sp-c1nm3-m2', '2026-05-01', 'C1-M2', 'C1-NM3', 'amis'),
+    ('sp-c1nm4-m1', '2026-06-01', 'C1-M1', 'C1-NM4', 'amis'),
+    ('sp-c1nm4-m2', '2026-06-01', 'C1-M2', 'C1-NM4', 'amis');
+
+-- col-2 nouveaux (Tableau 19) — parrains : C1-M1 et C1-M2 (membres confirmés de col-2)
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c2nm1-m1', '2026-03-01', 'C1-M1', 'C2-NM1', 'famille'),
+    ('sp-c2nm1-m2', '2026-03-01', 'C1-M2', 'C2-NM1', 'famille'),
+    ('sp-c2nm2-m1', '2026-03-01', 'C1-M1', 'C2-NM2', 'famille'),
+    ('sp-c2nm2-m2', '2026-03-01', 'C1-M2', 'C2-NM2', 'famille'),
+    ('sp-c2nm3-m1', '2026-03-01', 'C1-M1', 'C2-NM3', 'collègues'),
+    ('sp-c2nm3-m2', '2026-03-01', 'C1-M2', 'C2-NM3', 'collègues');
+
+-- col-3 nouveaux (Tableau 20) — parrains : C3-M1 et C3-M2
+INSERT INTO sponsorship (id, sponsorship_date, sponsor_member_id, sponsored_member_id, relationship)
+VALUES
+    ('sp-c3nm1-m1', '2026-01-01', 'C3-M1', 'C3-NM1', 'famille'),
+    ('sp-c3nm1-m2', '2026-01-01', 'C3-M2', 'C3-NM1', 'famille'),
+    ('sp-c3nm2-m1', '2026-02-01', 'C3-M1', 'C3-NM2', 'amis'),
+    ('sp-c3nm2-m2', '2026-02-01', 'C3-M2', 'C3-NM2', 'amis'),
+    ('sp-c3nm3-m1', '2026-02-01', 'C3-M1', 'C3-NM3', 'collègues'),
+    ('sp-c3nm3-m2', '2026-02-01', 'C3-M2', 'C3-NM3', 'collègues'),
+    ('sp-c3nm4-m1', '2026-03-01', 'C3-M1', 'C3-NM4', 'famille'),
+    ('sp-c3nm4-m2', '2026-03-01', 'C3-M2', 'C3-NM4', 'famille'),
+    ('sp-c3nm5-m1', '2026-03-01', 'C3-M1', 'C3-NM5', 'amis'),
+    ('sp-c3nm5-m2', '2026-03-01', 'C3-M2', 'C3-NM5', 'amis'),
+    ('sp-c3nm6-m1', '2026-03-01', 'C3-M1', 'C3-NM6', 'collègues'),
+    ('sp-c3nm6-m2', '2026-03-01', 'C3-M2', 'C3-NM6', 'collègues');
 
 -- ============================================================
--- END OF SEED - TD Final 6 Mai 2026
+-- END OF SEED — 6 MAI 2026
 -- ============================================================
